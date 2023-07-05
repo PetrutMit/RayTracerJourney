@@ -1,5 +1,5 @@
-#include "Chapters2-3/Vec3.hpp"
-#include "Chapters2-3/Color.hpp"
+#include "../Chapters2-3/Vec3.hpp"
+#include "../Chapters2-3/Color.hpp"
 #include "Ray.hpp"
 
 #include <iostream>
@@ -47,7 +47,7 @@ int main(void) {
             auto v = double(j) / (image_height - 1);
             ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
             color pixel_color = ray_color(r);
-            write_color(ppm_file, pixel_color);
+            write_color(ppm_file, pixel_color, 1);
         }
     }
 

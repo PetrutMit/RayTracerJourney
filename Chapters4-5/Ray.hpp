@@ -1,7 +1,7 @@
 #ifndef RAY_HPP
 #define RAY_HPP
 
-#include "./Chapters2-3/Vec3.hpp"
+#include "../Chapters2-3/Vec3.hpp"
 
 class ray {
 public:
