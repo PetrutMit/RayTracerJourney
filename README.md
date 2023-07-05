@@ -1,8 +1,8 @@
-# Mitrache Mihnea
+#### Mitrache Mihnea
 
-### Real Time Ray-Tracer
+# Real Time Ray-Tracer
 
-#### Starting the project
+## Starting the project
 > A good starting point is Peter Shirley's book: [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
 
 > Steps taken after reading the book:
@@ -28,4 +28,4 @@
 > 8. Adding a random generator
 > 9. Adding a camera class -> [camera.hpp](Chapters6-7/camera.hpp)
 > 10. Modify color.hpp to support multy samples
-> 11. Rendering image again with multiple samples to avoid aliasing -> [snormals_sphere_ground_multisample.cpp](Chapters6-7/snormals_sphere_ground_multisample.cpp)
+> 11. Rendering image again with multiple samples to avoid aliasing-> [snormals_sphere_ground_multisample.cpp](Chapters6-7/snormals_sphere_ground_multisample.cpp)
