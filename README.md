@@ -16,3 +16,16 @@
 > 1. Exploring the ray class -> [ray.hpp](Chapters4-5/ray.hpp)
 > 2. Rendering a blue to white gradient -> [gradient.cpp](Chapters4-5/gradient.cpp)
 > 3. Gradient example with intersection of a simple sphere -> [gradient_sphere.cpp](Chapters4-5/gradient_sphere.cpp)
+
+> * Chapters 6-7:
+> 1. Exploring surface normals -> [surface_normals.cpp](Chapters6-7/surface_normals.cpp)
+> 2. Abstractization for hittable objects -> [hittable.hpp](Chapters6-7/hittable.hpp)
+> 3. Making the sphere extend a hittable object -> [sphere.hpp](Chapters6-7/sphere.hpp)
+> 4. Adding front/back face determination
+> 5. Adding support for multiple hittable objects -> [hittable_list.hpp](Chapters6-7/hittable_list.hpp)
+> 6. Adding a unified header file -> [rtweekend.hpp](Chapters6-7/rtweekend.hpp)
+> 7. Merging all the above concepts -> [snormals_sphere_ground.cpp](Chapters6-7/snormals_sphere_ground.cpp)
+> 8. Adding a random generator
+> 9. Adding a camera class -> [camera.hpp](Chapters6-7/camera.hpp)
+> 10. Modify color.hpp to support multy samples
+> 11. Rendering image again with multiple samples to avoid aliasing -> [snormals_sphere_ground_multisample.cpp](Chapters6-7/snormals_sphere_ground_multisample.cpp)
