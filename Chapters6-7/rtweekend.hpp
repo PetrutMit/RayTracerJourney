@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <cstdlib>
 #include <random>
 
 
@@ -26,16 +27,9 @@ inline double degrees_to_radians(double degrees) {
 
 // Common Headers
 
-#include "Chapters2-3/Vec3.hpp"
-#include "Chapters4-5/Ray.hpp"
+#include "../Chapters2-3/Vec3.hpp"
+#include "../Chapters4-5/Ray.hpp"
 
-// Random Number Generator
-
-inline double random_double() {
-    static std::uniform_real_distribution<double> distribution(0.0, 1.0);
-    static std::mt19937 generator;
-    return distribution(generator);
-}
 
 // Clamp Function
 

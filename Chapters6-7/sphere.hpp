@@ -2,7 +2,7 @@
 #define SPHERE_HPP
 
 #include "hittable.hpp"
-#include "Chapters2-3/Vec3.hpp"
+#include "../Chapters2-3/Vec3.hpp"
 
 class sphere : public hittable {
     public:
