@@ -29,3 +29,9 @@
 > 9. Adding a camera class -> [camera.hpp](Chapters6-7/camera.hpp)
 > 10. Modify color.hpp to support multy samples
 > 11. Rendering image again with multiple samples to avoid aliasing-> [snormals_sphere_ground_multisample.cpp](Chapters6-7/snormals_sphere_ground_multisample.cpp)
+
+> * Chapter 8:
+> 1. Updating previous header files to support matt random reflection
+> 2. Exploring the use of a random ray
+> 3. Limiting the number of bounces to avoid stack overflow from recursive calls
+> 4. Rendering a diffuse sphere with the above concepts -> [diffuse_sphere.cpp](Chapter8/diffuse_sphere.cpp)
