@@ -8,3 +8,6 @@ ppm_format: PPM_format.cpp
 
 ppm_image: PPM_image.cpp
 	$(CC) $(CFLAGS) -o ppm_image PPM_image.cpp
+
+clean:
+	rm -f ppm_format ppm_image

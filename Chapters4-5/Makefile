@@ -8,3 +8,6 @@ gradient: gradient.cpp
 
 gradient_sphere: gradient_sphere.cpp
 	$(CC) $(CFLAGS) -o gradient_sphere gradient_sphere.cpp
+
+clean:
+	rm -f gradient gradient_sphere
