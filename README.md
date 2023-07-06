@@ -35,3 +35,6 @@
 > 2. Exploring the use of a random ray
 > 3. Limiting the number of bounces to avoid stack overflow from recursive calls
 > 4. Rendering a diffuse sphere with the above concepts -> [diffuse_sphere.cpp](Chapter8/diffuse_sphere.cpp)
+> 5. Adding some gamma correction
+> 6. Fixing the shadow acne problem
+> 7. Exploring alternative methods for diffuse reflection
