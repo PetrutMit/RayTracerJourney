@@ -48,9 +48,15 @@
 > 6. Adding a fuzziness factor to the metal material
 
 > * Chapter 10:
-> Modifying the classes to support refraction
-> Adding a dielectric, always refracting material -> [dielectric.hpp](Chapter10/dielectric.hpp)
-> Rendering a scene with dielectric spheres -> [dielectric_spheres.cpp](Chapter10/dielectric_spheres.cpp)
-> Checking for total internal reflection
-> Integrating Schlick's approximation for reflectivity
-> Negative radius for hollow glass spheres with dielectric material -> [hollow_glass_spheres.cpp](Chapter10/hollow_glass_spheres.cpp)
+> 1. Modifying the classes to support refraction
+> 2. Adding a dielectric, always refracting material -> [dielectric.hpp](Chapter10/dielectric.hpp)
+> 3. Rendering a scene with dielectric spheres -> [dielectric_spheres.cpp](Chapter10/dielectric_spheres.cpp)
+> 4. Checking for total internal reflection
+> 5. Integrating Schlick's approximation for reflectivity
+> 6. Negative radius for hollow glass spheres with dielectric material -> [hollow_glass_spheres.cpp](Chapter10/hollow_glass_spheres.cpp)
+
+> * Chapter 11:
+> 1. Adding an ajustable field of view to our camera
+> 2. Rending a scene and using our adjustable camera -> [fov_camera.cpp](Chapter11/vfov_camera.cpp)
+> 3. Actualizing camera to have a lookat, lookfrom and vup vectors
+> 4. Applying the above concepts to get different viewpoints -> [viewpoints.cpp](Chapter11/viewpoints.cpp)
