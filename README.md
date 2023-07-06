@@ -46,3 +46,9 @@
 > 4. Adding a metal material + reflexion -> [metal.hpp](Chapter9/metal.hpp)
 > 5. Rendering a scene with shiny and matt spheres -> [shiny_matt_spheres.cpp](Chapter9/shiny_matt_spheres.cpp)
 > 6. Adding a fuzziness factor to the metal material
+
+> * Chapter 10:
+> Modifying the classes to support refraction
+> Adding a dielectric, always refracting material -> [dielectric.hpp](Chapter10/dielectric.hpp)
+> Rendering a scene with dielectric spheres -> [dielectric_spheres.cpp](Chapter10/dielectric_spheres.cpp)
+> Checking for total internal reflection
