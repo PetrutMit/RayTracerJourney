@@ -52,3 +52,5 @@
 > Adding a dielectric, always refracting material -> [dielectric.hpp](Chapter10/dielectric.hpp)
 > Rendering a scene with dielectric spheres -> [dielectric_spheres.cpp](Chapter10/dielectric_spheres.cpp)
 > Checking for total internal reflection
+> Integrating Schlick's approximation for reflectivity
+> Negative radius for hollow glass spheres with dielectric material -> [hollow_glass_spheres.cpp](Chapter10/hollow_glass_spheres.cpp)
