@@ -3,9 +3,14 @@
 
 #include "../Chapters4-5/Ray.hpp"
 
+// Forward declaration of material class
+// This means that the compiler knows that material is a class, but we don't know about it.
+class material;
+
 struct hit_record {
     point3 p;
     vec3 normal;
+    shared_ptr<material> mat_ptr;
     double t;
     bool front_face;
 

@@ -38,3 +38,10 @@
 > 5. Adding some gamma correction
 > 6. Fixing the shadow acne problem
 > 7. Exploring alternative methods for diffuse reflection
+
+> * Chapter 9:
+> 1. Adding support for materials -> [material.hpp](Chapter9/material.hpp)
+> 2. Modifying the hittable class to support materials
+> 3. Modelating diffuse/matt materials -> [lambertian.hpp](Chapter9/lambertian.hpp)
+> 4. Adding a metal material + reflexion -> [metal.hpp](Chapter9/metal.hpp)
+> 5. Rendering a scene with shiny and matt spheres -> [shiny_matt_spheres.cpp](Chapter9/shiny_matt_spheres.cpp)

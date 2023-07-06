@@ -29,6 +29,7 @@ inline double degrees_to_radians(double degrees) {
 
 #include "../Chapters2-3/Vec3.hpp"
 #include "../Chapters4-5/Ray.hpp"
+#include "../Chapters6-7/hittable.hpp"
 
 
 // Clamp Function
