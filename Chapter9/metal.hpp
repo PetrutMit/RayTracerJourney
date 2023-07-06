@@ -5,7 +5,8 @@
 
 class metal : public material {
     public:
-        metal(const color& a) : albedo(a) {}
+        // f is the fuzziness of the metal, radius of the sphere of confusion
+        metal(const color& a, double f) : albedo(a), fuzz(f < 1 ? f : 1) {}
 
         virtual bool scatter(
             const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered

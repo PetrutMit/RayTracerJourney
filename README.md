@@ -45,3 +45,4 @@
 > 3. Modelating diffuse/matt materials -> [lambertian.hpp](Chapter9/lambertian.hpp)
 > 4. Adding a metal material + reflexion -> [metal.hpp](Chapter9/metal.hpp)
 > 5. Rendering a scene with shiny and matt spheres -> [shiny_matt_spheres.cpp](Chapter9/shiny_matt_spheres.cpp)
+> 6. Adding a fuzziness factor to the metal material
