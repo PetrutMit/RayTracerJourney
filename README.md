@@ -60,3 +60,8 @@
 > 2. Rending a scene and using our adjustable camera -> [fov_camera.cpp](Chapter11/vfov_camera.cpp)
 > 3. Actualizing camera to have a lookat, lookfrom and vup vectors
 > 4. Applying the above concepts to get different viewpoints -> [viewpoints.cpp](Chapter11/viewpoints.cpp)
+
+> * Chapter 12:
+> 1. Introducing the focus concept on our camera
+> 2. More infos on camera dependencies -> [VideoAperture]https://www.youtube.com/watch?v=YojL7UQTVhc
+> 3. Rendering a scene with depth of field -> [depth_of_field.cpp](Chapter12/depth_of_field.cpp)
