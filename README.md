@@ -65,3 +65,5 @@
 > 1. Introducing the focus concept on our camera
 > 2. More infos on camera dependencies -> [VideoAperture]https://www.youtube.com/watch?v=YojL7UQTVhc
 > 3. Rendering a scene with depth of field -> [depth_of_field.cpp](Chapter12/depth_of_field.cpp)
+> Summing all the above chapters we can get our beautiful
+looking scene -> [final_scene.cpp](Chapter12/final_scene.cpp)

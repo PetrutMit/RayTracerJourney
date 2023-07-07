@@ -16,12 +16,9 @@
 #include <cmath>
 #include <random>
 
-// Random Number Generator
-// Better here than in rtweekend.hpp
 inline double random_double() {
-    static std::uniform_real_distribution<double> distribution(0.0, 1.0);
-    static std::mt19937 generator;
-    return distribution(generator);
+    // Returns a random real in [0,1).
+    return rand() / (RAND_MAX + 1.0);
 }
 
 inline double random_double(double min, double max) {
