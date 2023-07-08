@@ -187,6 +187,4 @@ inline vec3 random_in_unit_disk() {
     }
 }
 
-
-
 #endif
