@@ -61,16 +61,17 @@
 > 3. Actualizing camera to have a lookat, lookfrom and vup vectors
 > 4. Applying the above concepts to get different viewpoints -> [viewpoints.cpp](InOneWeekend/Chapter11/viewpoints.cpp)
 
-> * Chapter 12:
+> * Chapters 12-13:
 > 1. Introducing the focus concept on our camera
 > 2. More infos on camera dependencies -> [VideoAperture](InOneWeekend/https://www.youtube.com/watch?v=YojL7UQTVhc)
-> 3. Rendering a scene with depth of field -> [depth_of_field.cpp](InOneWeekend/Chapter12/depth_of_field.cpp)
-> Summing all the above chapters we can get our beautiful
+> 3. Rendering a scene with depth of field -> [depth_of_field.cpp](InOneWeekend/Chapter12-13/depth_of_field.cpp)
+> 4. Summing all the above chapters we can get our beautiful
 looking scene -> [final_scene.cpp](InOneWeekend/Chapter12/final_scene.cpp)
 
 <hr><hr>
 
 > After understending the concept, it is time to speed up the process using **CUDA**
 
-Steps taken to make our CUDA implementation:
-> Created a header file for
+> Steps taken to make our CUDA implementation:
+> Created a header file for our cuda implement -> [header.cuh](CUDA/header.cuh)
+> 
