@@ -64,14 +64,14 @@
 > * Chapters 12-13:
 > 1. Introducing the focus concept on our camera
 > 2. More infos on camera dependencies -> [VideoAperture](InOneWeekend/https://www.youtube.com/watch?v=YojL7UQTVhc)
-> 3. Rendering a scene with depth of field -> [depth_of_field.cpp](InOneWeekend/Chapter12-13/depth_of_field.cpp)
+> 3. Rendering a scene with depth of field -> [depth_of_field.cpp](InOneWeekend/Chapters12-13/depth_of_field.cpp)
 > 4. Summing all the above chapters we can get our beautiful
-looking scene -> [final_scene.cpp](InOneWeekend/Chapter12/final_scene.cpp)
+looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 
 <hr><hr>
 
 > After understending the concept, it is time to speed up the process using **CUDA**
 
 > Steps taken to make our CUDA implementation:
-> Created a header file for our cuda implement -> [header.cuh](CUDA/header.cuh)
-> 
+> 1. Created a header file for our cuda implement -> [header.cuh](Cuda/header.cuh)
+> 2. Rendering our first image using CUDA -> [firstCuda.cu](Cuda/firstCuda.cu)
