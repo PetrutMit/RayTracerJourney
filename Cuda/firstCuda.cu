@@ -1,4 +1,6 @@
-/* Main Ray Tracing Program
+/* Main file to render our first Ray Traced CUDA image
+ * The kernel will compute the color of each pixel based
+ * on pixel index. So far there are no rays implied
 */
 
 #include "Header.cuh"

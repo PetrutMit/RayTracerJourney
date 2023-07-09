@@ -73,5 +73,9 @@ looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 > After understending the concept, it is time to speed up the process using **CUDA**
 
 > Steps taken to make our CUDA implementation:
-> 1. Created a header file for our cuda implement -> [header.cuh](Cuda/header.cuh)
-> 2. Rendering our first image using CUDA -> [firstCuda.cu](Cuda/firstCuda.cu)
+> 1. Creating a cuda header file for our cuda implement -> [header.cuh](Cuda/header.cuh)
+> 2. Adding a cuda color header file -> [color.cuh](Cuda/color.cuh)
+> 3. Adding a cuda vec3 header file -> [vec3.cuh](Cuda/vec3.cuh)
+> 4. Rendering our first image using CUDA -> [firstCuda.cu](Cuda/firstCuda.cu)
+> 5. Adding a cuda ray header file -> [ray.cuh](Cuda/ray.cuh)
+> 6. Rendering a gradient image using rays and a simple camera -> [gradient.cu](Cuda/gradient.cu)

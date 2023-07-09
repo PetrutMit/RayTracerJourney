@@ -9,6 +9,7 @@
 
 #include "vec3.cuh"
 #include "color.cuh"
+#include "ray.cuh"
 
 #define TX 8
 #define TY 8
