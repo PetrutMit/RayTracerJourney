@@ -8,7 +8,14 @@ firstCuda: firstCuda.cu
 gradient: gradient.cu
 	$(CC) -o $@ $^
 
+simpleSphere: simpleSphere.cu
+	$(CC) -o $@ $^
+
+surfaceNormals: surfaceNormals.cu
+	$(CC) -o $@ $^
+
 clean:
-	rm -f firstCuda gradient
+	rm -f firstCuda gradient simpleSphere surfaceNormals
+
 
 
