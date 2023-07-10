@@ -3,6 +3,8 @@
 
 #include "hittable.cuh"
 
+
+// This one uses both aggregation and inheritance
 class hittable_list : public hittable {
     public:
         __device__ hittable_list() {}
@@ -17,6 +19,7 @@ __device__ bool hittable_list::hit(const ray& r, float t_min, float t_max, hit_r
     bool hit_anything = false;
     float closest_so_far = t_max;
 
+    // Loop through all objects in the list and find the closest hit
     for (int i = 0; i < list_size; i++) {
         if (list[i]->hit(r, t_min, closest_so_far, temp_rec)) {
             hit_anything = true;
