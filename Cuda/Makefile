@@ -14,6 +14,9 @@ simpleSphere: simpleSphere.cu
 surfaceNormals: surfaceNormals.cu
 	$(CC) -o $@ $^
 
+multipleSpheres: multipleSpheres.cu
+	$(CC) -o $@ $^
+
 clean:
 	rm -f firstCuda gradient simpleSphere surfaceNormals
 
