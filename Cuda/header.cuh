@@ -31,6 +31,7 @@ inline void checkReturn(cudaError_t err) {
 }
 
 // Random auxilliary functions
+// Make a random vector in all directions
 __device__ vec3 randomVector(curandState *localRandState) {
     float a = curand_uniform(localRandState);
     float b = curand_uniform(localRandState);

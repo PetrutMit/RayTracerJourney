@@ -21,7 +21,6 @@ class vec3 {
 
         // Constructors
         __device__ __host__ vec3() : e{0, 0, 0} {}
-        __device__ __host__ vec3(double u) : e{u, u, u} {}
         __device__ __host__ vec3(double e0, double e1, double e2) : e{e0, e1, e2} {}
 
         // Getters
