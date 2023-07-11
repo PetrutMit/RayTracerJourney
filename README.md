@@ -88,3 +88,5 @@ looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 > 13. Tested ways of allocating hittable objects on the device -> [testAllocation.cu](Cuda/testAllocation.cu)
 > 14. Adding a cuda camera header file -> [camera.cuh](Cuda/camera.cuh)
 > 15. Adding random support to get anti-aliasing in cuda -> [multipleSpheresAA.cu](Cuda/multipleSpheresAA.cu)
+> 16. Transforming ray bouncing recursive calls into iterative calls
+> 17. Rendering a scene with diffuse materials -> [diffuseSpheres.cu](Cuda/diffuseSpheres.cu)

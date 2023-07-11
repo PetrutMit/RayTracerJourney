@@ -52,8 +52,7 @@ __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hitta
         pixelColor += rayColor(r, world);
     }
 
-    pixelColor /= float(ns);
-    getColor(pixelColor);
+    getColor(pixelColor, ns);
 
     fb[pixelIndex] = pixelColor;
 }

@@ -21,6 +21,7 @@ class vec3 {
 
         // Constructors
         __device__ __host__ vec3() : e{0, 0, 0} {}
+        __device__ __host__ vec3(double u) : e{u, u, u} {}
         __device__ __host__ vec3(double e0, double e1, double e2) : e{e0, e1, e2} {}
 
         // Getters
@@ -56,14 +57,6 @@ class vec3 {
 
         __device__ double length_squared() const {
             return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
-        }
-
-        __device__ inline static vec3 random() {
-            return vec3(random_double(), random_double(), random_double());
-        }
-
-        __device__ inline static vec3 random(double min, double max) {
-            return vec3(random_double(min,max), random_double(min,max), random_double(min,max));
         }
 
         // Check if the vector is close to zero in all dimensions
@@ -132,27 +125,6 @@ __device__ inline vec3 unit_vector(vec3 v) {
     return v / v.length();
 }
 
-__device__ inline vec3 random_in_unit_sphere() {
-    while (true) {
-        auto p = vec3::random(-1, 1);
-        if (p.length_squared() >= 1) continue;
-        return p;
-    }
-}
-// Normalized random vector to get a random unit vector
-// on the unit sphere
-__device__ inline vec3 random_unit_vector() {
-    return unit_vector(random_in_unit_sphere());
-}
-
-__device__ inline vec3 random_in_hemisphere(const vec3& normal) {
-    vec3 in_unit_sphere = random_in_unit_sphere();
-    if (dot(in_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
-        return in_unit_sphere;
-    else
-        return -in_unit_sphere;
-}
-
 // Reflecting a vector
 __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
     return v - 2*dot(v,n)*n;
@@ -165,15 +137,6 @@ __device__ inline vec3 refract(const vec3& uv, const vec3 &n, double etai_over_e
     vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
     vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;
-}
-
-// Random vector in unit disk
-__device__ inline vec3 random_in_unit_disk() {
-    while (true) {
-        auto p = vec3(random_double(-1,1), random_double(-1,1), 0);
-        if (p.length_squared() >= 1) continue;
-        return p;
-    }
 }
 
 #endif
