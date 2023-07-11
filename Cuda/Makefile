@@ -20,8 +20,11 @@ multipleSpheres: multipleSpheres.cu
 testAllocation: testAllocation.cu
 	$(CC) -o $@ $^
 
+multipleSpheresAA: multipleSpheresAA.cu
+	$(CC) -o $@ $^
+
 clean:
-	rm -f firstCuda gradient simpleSphere surfaceNormals
+	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA
 
 
 

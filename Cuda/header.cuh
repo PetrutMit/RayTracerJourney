@@ -12,6 +12,7 @@
 #include "ray.cuh"
 #include "hittable_list.cuh"
 #include "sphere.cuh"
+#include "camera.cuh"
 
 #define TX 8
 #define TY 8

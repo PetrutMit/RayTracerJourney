@@ -85,12 +85,12 @@ int main(int argc, char **argv) {
         // CPU allocation
         allocateViaCPU(ptrDev, size);
 
-        // dim3 blockSize(1024);
-        // dim3 blockCount((size + blockSize.x - 1) / blockSize.x);
-        // doSomeWork<<<blockCount, blockSize>>>(ptrDev, size);
-        // checkCudaErrors(cudaDeviceSynchronize());
+        dim3 blockSize(1024);
+        dim3 blockCount((size + blockSize.x - 1) / blockSize.x);
+        doSomeWork<<<blockCount, blockSize>>>(ptrDev, size);
+        checkCudaErrors(cudaDeviceSynchronize());
 
-        //deallocateViaCPU(ptrDev, size);
+        deallocateViaCPU(ptrDev, size);
    }
 
     checkCudaErrors(cudaFree(ptrDev));
