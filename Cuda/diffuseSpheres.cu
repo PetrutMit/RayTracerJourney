@@ -13,7 +13,7 @@ __device__ color rayColor(const ray& r, hittable **world, curandState *localRand
    for (int i = 0; i < 50; i ++) {
         hit_record rec;
         if ((*world)->hit(curRay, 0.001f, FLT_MAX, rec)) {
-            vec3 target = rec.p + rec.normal + randomInUnitSphere(localRandState);
+            vec3 target = rec.p + rec.normal + randomInHemiSphere(rec.normal, localRandState);
             curAttenuation *= 0.5f;
             curRay = ray(rec.p, target - rec.p);
         } else {
