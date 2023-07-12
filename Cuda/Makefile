@@ -32,6 +32,9 @@ metalSpheres: metalSpheres.cu
 dielectricSpheres: dielectricSpheres.cu
 	$(CC) -o $@ $^
 
+viewpoints: viewpoints.cu
+	$(CC) -o $@ $^
+
 clean:
 	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres
 
