@@ -75,4 +75,42 @@ class metal : public material {
         float fuzz;
 };
 
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
+class dielectric : public material {
+    public:
+        __device__ dielectric(float ri) : ref_idx(ri) {}
+
+        __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState *localRandState) const override {
+            attenuation = color(1.0f, 1.0f, 1.0f);
+            float etai_over_etat = rec.front_face ? (1.0f / ref_idx) : ref_idx;
+
+            vec3 unit_direction = unit_vector(r_in.direction());
+            float cos_theta = min(dot(-unit_direction, rec.normal), 1.0f);
+            float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+
+            bool cannotRefract = etai_over_etat * sin_theta > 1.0f;
+            vec3 direction;
+
+            if (cannotRefract || reflectance(cos_theta, etai_over_etat) > curand_uniform(localRandState))
+                direction = reflect(unit_direction, rec.normal);
+            else
+                direction = refract(unit_direction, rec.normal, etai_over_etat);
+
+            scattered = ray(rec.p, direction);
+            return true;
+        }
+
+    public:
+        float ref_idx;
+
+    private:
+        __device__ static float reflectance(float cosine, float ref_idx) {
+            // Use Schlick's approximation for reflectance
+            float r0 = (1.0f - ref_idx) / (1.0f + ref_idx);
+            r0 = r0 * r0;
+            return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
+        }
+};
+
 #endif

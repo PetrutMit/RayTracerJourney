@@ -29,8 +29,11 @@ diffuseSpheres: diffuseSpheres.cu
 metalSpheres: metalSpheres.cu
 	$(CC) -o $@ $^
 
+dielectricSpheres: dielectricSpheres.cu
+	$(CC) -o $@ $^
+
 clean:
-	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres
+	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres
 
 
 

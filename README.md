@@ -90,3 +90,10 @@ looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 > 15. Adding random support to get anti-aliasing in cuda -> [multipleSpheresAA.cu](Cuda/multipleSpheresAA.cu)
 > 16. Transforming ray bouncing recursive calls into iterative calls
 > 17. Rendering a scene with diffuse materials -> [diffuseSpheres.cu](Cuda/diffuseSpheres.cu)
+> 18. Adding a cuda material header file -> [material.cuh](Cuda/material.cuh)
+> 19. Adding material support to our hittable objects
+> 20. Adding support for lambertian material -> [material.cuh](Cuda/material.cuh)
+> 21. Adding support for metal material -> [material.cuh](Cuda/material.cuh)
+> 22. Rendering metal spheres -> [metalSpheres.cu](Cuda/metalSpheres.cu)
+> 23. Adding support for dielectric material -> [material.cuh](Cuda/material.cuh)
+> 24. Rendering dielectric spheres -> [dielectricSpheres.cu](Cuda/dielectricSpheres.cu)
