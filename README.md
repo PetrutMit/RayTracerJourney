@@ -107,5 +107,7 @@ looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 cudaMalloc((void**)&d_list, SPHERE_COUNT * sizeof(hittable*))
 // Results in cuda error: unspecified launch failure ==> SEGFAULT
 // Probably because macro is not expanded correctly
+// With debug flags on ??
 ```
+> 30. Instrumenting the code and adding some improvements
 

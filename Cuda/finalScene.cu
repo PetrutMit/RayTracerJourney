@@ -1,7 +1,5 @@
-// /* Main file to Ray Trace a scene with multiple spheres
-//  * Still testing to find the best way to allocate CUDA memory
-//  * for this
-// */
+/* Main file to Ray Trace a scene with multiple spheres
+*/
 
 #include "header.cuh"
 
@@ -35,7 +33,12 @@ __device__ color rayColor(const ray& r, hittable **world, curandState *localRand
    return color(0.0f, 0.0f, 0.0f);
 }
 
-__global__ void renderInit(int maxX, int maxY, curandState *randState) {
+__global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, curandState *randStateWorld) {
+    // Also initialize here the random state for world construction
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        curand_init(1984, 0, 0, randStateWorld);
+    }
+
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -43,14 +46,9 @@ __global__ void renderInit(int maxX, int maxY, curandState *randState) {
 
     int pixelIndex = j * maxX + i;
 
-    // Each thread gets same seed, a different sequence number, no offset
-    curand_init(1984, pixelIndex, 0, &randState[pixelIndex]);
-}
-
-__global__ void randInit(curandState *randState) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        curand_init(1984, 0, 0, randState);
-    }
+    // Aperently we get better results if we use a different seed for each pixel
+    // and same sequence for each thread
+    curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
 __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hittable **world, curandState *randState) {
@@ -123,9 +121,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
         material *mat3 = new metal(vec3(0.7f, 0.6f, 0.5f), 0.0f);
         *(d_list+ cnt++) = new sphere(vec3(4.0f, 1.0f, 0.0f), 1.0f, mat3);
 
-
         // Camera
-
         vec3 lookFrom(13.0f, 2.0f, 3.0f);
         vec3 lookAt(0.0f, 0.0f, 0.0f);
         vec3 vUp(0.0f, 1.0f, 0.0f);
@@ -159,6 +155,7 @@ int main(void) {
     color *fb_gpu;
     cudaError_t cudaStatus;
 
+    // create device frame buffer
     cudaStatus = cudaMalloc((void**)&fb_gpu, num_pixels * sizeof(color));
     checkReturn(cudaStatus);
 
@@ -186,26 +183,34 @@ int main(void) {
     cudaStatus = cudaMalloc((void**)&d_cam, sizeof(camera*));
     checkReturn(cudaStatus);
 
-    randInit<<<1, 1>>>(d_worldRandState);
+    dim3 blockCount(nx / TX + 1, ny / TY + 1);
+    dim3 blockSize(TX, TY);
+
+    renderInit<<<blockCount, blockSize>>>(nx, ny, d_randState, d_worldRandState);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
     allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_worldRandState);
     checkReturn(cudaGetLastError());
+
+    // Create events until world is created
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
     checkReturn(cudaDeviceSynchronize());
-
-    dim3 blockCount(nx / TX + 1, ny / TY + 1);
-    dim3 blockSize(TX, TY);
-
-    renderInit<<<blockCount, blockSize>>>(nx, ny, d_randState);
-
-    checkReturn(cudaGetLastError());
-    checkReturn(cudaDeviceSynchronize());
+    checkReturn(cudaEventRecord(start));
 
     render<<<blockCount, blockSize>>>(fb_gpu, nx, ny, ns, d_cam, d_world, d_randState);
 
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
+
+    checkReturn(cudaEventRecord(stop));
+
+    float milliseconds = 0;
+    checkReturn(cudaEventElapsedTime(&milliseconds, start, stop));
+    std::cerr << "Elapsed time: " << milliseconds << " ms\n";
 
     color *fb_cpu = (color*)malloc(num_pixels * sizeof(color));
     cudaStatus = cudaMemcpy(fb_cpu, fb_gpu, num_pixels * sizeof(color), cudaMemcpyDeviceToHost);

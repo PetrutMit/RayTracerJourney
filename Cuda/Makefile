@@ -1,6 +1,7 @@
 .PHONY: clean
 
 CC=nvcc
+DEBUG= -g -G
 
 firstCuda: firstCuda.cu
 	$(CC) -o $@ $^
@@ -42,7 +43,7 @@ finalScene: finalScene.cu
 	$(CC) -o $@ $^
 
 clean:
-	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres
+	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres finalScene
 
 
 
