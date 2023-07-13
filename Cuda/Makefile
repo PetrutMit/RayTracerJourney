@@ -38,6 +38,9 @@ viewpoints: viewpoints.cu
 depthOfField: depthOfField.cu
 	$(CC) -o $@ $^
 
+finalScene: finalScene.cu
+	$(CC) -o $@ $^
+
 clean:
 	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres
 

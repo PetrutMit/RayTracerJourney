@@ -100,3 +100,12 @@ looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
 > 25. Adding a cuda camera header file -> [camera.cuh](Cuda/camera.cuh)
 > 26. Exploring various camera positions -> [viewpoints.cu](Cuda/viewpoints.cu)
 > 27. Introducing defocus blur -> [depthOfField.cu](Cuda/depthOfField.cu)
+> 28. Rendering our final beautiful scene -> [finalScene.cu](Cuda/finalScene.cu)
+> 29. Finally defeted a Cpp bug worth mentioning
+```Cpp
+#define SPHERE_COUNT 22*22 + 3 + 1
+cudaMalloc((void**)&d_list, SPHERE_COUNT * sizeof(hittable*))
+// Results in cuda error: unspecified launch failure ==> SEGFAULT
+// Probably because macro is not expanded correctly
+```
+
