@@ -1,7 +1,8 @@
 .PHONY: clean
 
 CC=nvcc
-DEBUG= -g -G
+DEBUG=
+FLAGS=-lineinfo
 
 firstCuda: firstCuda.cu
 	$(CC) -o $@ $^
@@ -40,7 +41,7 @@ depthOfField: depthOfField.cu
 	$(CC) -o $@ $^
 
 finalScene: finalScene.cu
-	$(CC) -o $@ $^
+	$(CC) $(FLAGS) -o $@ $^
 
 clean:
 	rm -f firstCuda gradient simpleSphere surfaceNormals multipleSpheres testAllocation multipleSpheresAA diffuseSpheres metalSpheres dielectricSpheres finalScene

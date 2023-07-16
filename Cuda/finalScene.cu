@@ -3,7 +3,7 @@
 
 #include "header.cuh"
 
-#define SPHERE_COUNT 488
+#define SPHERE_COUNT 489
 
 __device__ color rayColor(const ray& r, hittable **world, curandState *localRandState) {
    ray curRay = r;
@@ -25,7 +25,7 @@ __device__ color rayColor(const ray& r, hittable **world, curandState *localRand
             vec3 unitDirection = unit_vector(curRay.direction());
             float t = 0.5f * (unitDirection.y() + 1.0f);
             color c1(1.0f, 1.0f, 1.0f);
-            color c2(0.5f, 0.7f, 1.0f);
+            color c2(0.9f, 0.9f, 1.0f);
             return curAttenuation * ((1.0f - t) * c1 + t * c2);
         }
    }
@@ -73,8 +73,6 @@ __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hitta
     fb[pixelIndex] = pixelColor;
 }
 
-#define RND (curand_uniform(&local_rand_state))
-
 __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *d_randState) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         *(d_world) = new hittable_list(d_list,SPHERE_COUNT);
@@ -82,7 +80,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
         curandState localRandState = *d_randState;
 
         // Spheres
-        material *groundMat = new lambertian(vec3(0.5f, 0.5f, 0.5f));
+        material *groundMat = new lambertian(vec3(0.5f, 0.5f, 0.5f), false);
         *(d_list) = new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMat);
         int cnt = 1;
         for (int a = -11; a < 11; a ++) {
@@ -95,7 +93,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
                         vec3 albedo = vec3(curand_uniform(&localRandState) * curand_uniform(&localRandState),
                                            curand_uniform(&localRandState) * curand_uniform(&localRandState),
                                            curand_uniform(&localRandState) * curand_uniform(&localRandState));
-                        sphereMat = new lambertian(albedo);
+                        sphereMat = new lambertian(albedo, false);
                         *(d_list + cnt++) = new sphere(center, 0.2f, sphereMat);
                     } else if (chooseMat < 0.95f) {
                         // metal
@@ -115,11 +113,14 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
         material *mat1 = new dielectric(1.5f);
         *(d_list+ cnt++) = new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, mat1);
 
-        material *mat2 = new lambertian(vec3(0.4f, 0.2f, 0.1f));
+        material *mat2 = new lambertian(vec3(0.4f, 0.2f, 0.1f), false);
         *(d_list+ cnt++) = new sphere(vec3(-4.0f, 1.0f, 0.0f), 1.0f, mat2);
 
         material *mat3 = new metal(vec3(0.7f, 0.6f, 0.5f), 0.0f);
         *(d_list+ cnt++) = new sphere(vec3(4.0f, 1.0f, 0.0f), 1.0f, mat3);
+
+        material *mat4 = new lambertian(vec3(0.4f, 0.2f, 0.1f), true);
+        *(d_list+ cnt++) = new sphere(vec3(6.5f, 0.3f, 2.0f), 0.3f, mat4);
 
         // Camera
         vec3 lookFrom(13.0f, 2.0f, 3.0f);
@@ -171,7 +172,7 @@ int main(void) {
 
     // create world of hittable objects
     hittable **d_list;
-    cudaStatus = cudaMalloc((void**)&d_list, 488 * sizeof(hittable*));
+    cudaStatus = cudaMalloc((void**)&d_list, SPHERE_COUNT * sizeof(hittable*));
     checkReturn(cudaStatus);
 
     hittable **d_world;
@@ -183,7 +184,7 @@ int main(void) {
     cudaStatus = cudaMalloc((void**)&d_cam, sizeof(camera*));
     checkReturn(cudaStatus);
 
-    dim3 blockCount(nx / TX + 1, ny / TY + 1);
+    dim3 blockCount(nx + TX - 1 / TX, ny + TY - 1 / TY);
     dim3 blockSize(TX, TY);
 
     renderInit<<<blockCount, blockSize>>>(nx, ny, d_randState, d_worldRandState);
@@ -243,6 +244,15 @@ int main(void) {
     checkReturn(cudaStatus);
 
     cudaStatus = cudaFree(fb_gpu);
+    checkReturn(cudaStatus);
+
+    cudaStatus = cudaFree(d_cam);
+    checkReturn(cudaStatus);
+
+    cudaStatus = cudaFree(d_randState);
+    checkReturn(cudaStatus);
+
+    cudaStatus = cudaFree(d_worldRandState);
     checkReturn(cudaStatus);
 
     free(fb_cpu);

@@ -110,4 +110,6 @@ cudaMalloc((void**)&d_list, SPHERE_COUNT * sizeof(hittable*))
 // With debug flags on ??
 ```
 > 30. Instrumenting the code and adding some improvements
+> 31. Trying to add a source of light in our scene
+> 32. Adding support for emissive materials -> [material.cuh](Cuda/material.cuh)
 
