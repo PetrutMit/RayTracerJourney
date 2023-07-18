@@ -1,6 +1,6 @@
 #### Mitrache Mihnea
 
-# Real Time Ray-Tracer
+# Ray-Tracer Journey
 
 ## Starting the project
 > A good starting point is Peter Shirley's book: [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
@@ -13,7 +13,7 @@
 > 4. Integrating the above concepts in getting the PPM image -> [PPM_image.cpp](InOneWeekend/Chapters2-3/PPM_image.cpp)
 
 > * Chapters 4-5:
-> 1. Exploring the ray class -> [ray.hpp](InOneWeekend/Chapters4-5/ray.hpp)
+> 1. Exploring the ray class -> [ray.hpp](InOneWeekend/Chapters4-5/Ray.hpp)
 > 2. Rendering a blue to white gradient -> [gradient.cpp](InOneWeekend/Chapters4-5/gradient.cpp)
 > 3. Gradient example with intersection of a simple sphere -> [gradient_sphere.cpp](InOneWeekend/Chapters4-5/gradient_sphere.cpp)
 
@@ -63,7 +63,7 @@
 
 > * Chapters 12-13:
 > 1. Introducing the focus concept on our camera
-> 2. More infos on camera dependencies -> [VideoAperture](InOneWeekend/https://www.youtube.com/watch?v=YojL7UQTVhc)
+> 2. More infos on camera dependencies -> [VideoAperture](https://www.youtube.com/watch?v=YojL7UQTVhc)
 > 3. Rendering a scene with depth of field -> [depth_of_field.cpp](InOneWeekend/Chapters12-13/depth_of_field.cpp)
 > 4. Summing all the above chapters we can get our beautiful
 looking scene -> [final_scene.cpp](InOneWeekend/Chapters12-13/final_scene.cpp)
