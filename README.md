@@ -9,4 +9,8 @@ Steps made in this stage can be found in the [InOneWeekend](InOneWeekend) folder
 <hr>
 
 > 2. After understending the concept, it is time to speed up the process using **CUDA**
-Steps made in this stage can be found in the [Cuda](Cuda) folder
+Steps made in this stage can be found in the [CudaInOneWeekend](CudaInOneWeekend) folder
+
+<hr>
+
+> 3. After getting a good grasp of the concepts, it is time to start implementing a more complex ray tracer. For this, it is time to look at the next book in series: [Ray Tracing: The Next Week](https://raytracing.github.io/books/RayTracingTheNextWeek.html)
