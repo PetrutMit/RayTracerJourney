@@ -10,3 +10,6 @@
 > 3. Rendering previous final scene with motion -> [moving_spheres.cpp](TheNextWeek/Chapter2/moving_spheres.cpp)
 
 > * Chapter 3:
+> 1. Adding an AABB class -> [aabb.hpp](TheNextWeek/Chapter3/aabb.hpp)
+> 2. Defining bounding boxes for hittable objects
+> 3. Adding a BVH class -> [bvh.hpp](TheNextWeek/Chapter3/bvh.hpp)
