@@ -5,7 +5,7 @@
 
 #include "hittable.hpp"
 
-#include "../Chapter3/aabb.h"
+#include "../Chapter3/aabb.hpp"
 
 class moving_sphere : public hittable {
     public:
