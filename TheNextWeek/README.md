@@ -13,3 +13,22 @@
 > 1. Adding an AABB class -> [aabb.hpp](Chapter3/aabb.hpp)
 > 2. Defining bounding boxes for hittable objects
 > 3. Adding a BVH class -> [bvh.hpp](Chapter3/bvh.hpp)
+
+> * Chapter 4:
+> 1. Adding a texture class -> [texture.hpp](Chapter4/texture.hpp)
+> 2. Modelate colors as constant textures
+> 3. Adding texture coordinates to the sphere class
+> 4. Modify material to support textures
+> 5. Adding a checker texture(chess table like) class -> [checker_texture.hpp](Chapter4/checker_texture.hpp)
+> 6. Rendering a scene with textures -> [texture_spheres.cpp](Chapter4/texture_spheres.cpp)
+
+> * Chapter 5:
+> 1. Adding a perlin noise class -> [perlin.hpp](Chapter5/perlin.hpp)
+> 2. Adding a perlin noise texture -> [texture.hpp](Chapter4/texture.hpp)
+> 3. Rendering perlin textured spheres -> [perlin_spheres.cpp](Chapter5/perlin_spheres.cpp)
+> 4. Getting a smoother perlin texture with linear interpolation
+> 5. Adding Hermitian smoothing to limit Mach Band Effect
+> 6. Adding a noise scale to the perlin texture
+> 7. Replacing points with random unit vectors
+> 8. Simulating turbulence with perlin noise
+> 9. Rendering marble like spheres with perlin noise -> [perlin_spheres.cpp](Chapter5/marble_spheres.cpp)
