@@ -32,3 +32,8 @@
 > 7. Replacing points with random unit vectors
 > 8. Simulating turbulence with perlin noise
 > 9. Rendering marble like spheres with perlin noise -> [perlin_spheres.cpp](Chapter5/marble_spheres.cpp)
+
+> * Chapter 6:
+> 1. Modelating image as a texture and using texture coordinates to refer pixels in the image -> [texture.hpp](Chapter4/texture.hpp)
+> 2. Configuring [stb_image](https://github.com/nothings/stb) utility in our header file -> [stb_image.h](Chapter6/rtw_stb_image.hpp)
+> 3. Rendering a scene with an image texture -> [earth_sphere.cpp](Chapter6/earth_sphere.cpp)
