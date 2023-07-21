@@ -45,3 +45,10 @@
 > 4. Rendering a scene with a rectangle light source -> [aarect_light.cpp](Chapter7/aarect_light.cpp)
 > 5. Adding the other 2 axis aligned rectangles, xz, yz -> [aarect.hpp](Chapter7/aarect.hpp)
 > 6. Modelating a Cornell Box with our axis aligned rectangles -> [cornell_box.cpp](Chapter7/cornell_box.cpp)
+
+> * Chapter 8:
+> 1. Adding a box class -> [box.hpp](Chapter8/box.hpp)
+> 2. Rendering a complete cornell box with boxes -> [cornell_box_with_boxes.cpp](Chapter8/cornell_box_with_boxes.cpp)
+> 3. Modelating translation of objects to get boxes with different positions -> [translate.hpp](Chapter8/translate.hpp)
+> 4. Modelating rotation of objects to get boxes with different orientations -> [rotate_y.hpp](Chapter8/rotate_y.hpp)
+> 5. Rendering the cornell box with translated, rotated boxes -> [cornell_box_with_rotated_boxes.cpp](Chapter8/cornell_box_with_tr_boxes.cpp)
