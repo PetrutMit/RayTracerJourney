@@ -52,3 +52,10 @@
 > 3. Modelating translation of objects to get boxes with different positions -> [translate.hpp](Chapter8/translate.hpp)
 > 4. Modelating rotation of objects to get boxes with different orientations -> [rotate_y.hpp](Chapter8/rotate_y.hpp)
 > 5. Rendering the cornell box with translated, rotated boxes -> [cornell_box_with_rotated_boxes.cpp](Chapter8/cornell_box_with_tr_boxes.cpp)
+
+> * Chapter 9:
+> 1. Adding a constant medium class -> [constant_medium.hpp](Chapter9/constant_medium.hpp)
+> 2. Rendering our Cornell Box with a foggy medium -> [cornell_box_fog.cpp](Chapter9/cornell_box_fog.cpp)
+
+> * Chapter 10:
+> 1. Rendering our final, beautiful scene -> [final_scene.cpp](Chapter10/final_scene.cpp)
