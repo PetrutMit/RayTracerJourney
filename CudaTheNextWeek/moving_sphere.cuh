@@ -4,6 +4,7 @@
 #include "hittable.cuh"
 #include "vec3.cuh"
 #include "material.cuh"
+#include "aabb.cuh"
 
 
 class moving_sphere : public hittable {
@@ -17,6 +18,7 @@ class moving_sphere : public hittable {
             {};
 
         __device__ virtual bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const override;
+        __device__ virtual bool bounding_box(float time0, float time1, aabb& output_box) const override;
         __device__ point3 center(float time) const;
 
     public:
@@ -54,6 +56,22 @@ __device__ bool moving_sphere::hit(const ray& r, float t_min, float t_max, hit_r
     rec.set_face_normal(r, outward_normal);
     rec.mat_ptr = mat_ptr;
 
+    return true;
+}
+
+__device__ bool moving_sphere::bounding_box(float time0, float time1, aabb& output_box) const {
+    aabb box0(
+        center(time0) - vec3(radius, radius, radius),
+        center(time0) + vec3(radius, radius, radius));
+    if (center(time0) == center(time1)) {
+        output_box = box0;
+        return true;
+    }
+
+    aabb box1(
+        center(time1) - vec3(radius, radius, radius),
+        center(time1) + vec3(radius, radius, radius));
+    output_box = surrounding_box(box0, box1);
     return true;
 }
 
