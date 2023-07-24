@@ -15,6 +15,7 @@ class sphere : public hittable {
         vec3 center;
         float radius;
         material* mat_ptr;
+
 };
 
 __device__ bool sphere::hit(const ray& r, float tmin, float tmax, hit_record& rec) const {

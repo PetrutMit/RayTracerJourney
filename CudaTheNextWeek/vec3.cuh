@@ -108,6 +108,10 @@ __device__ __host__ inline vec3 operator /(const vec3& v, double t) {
     return (1/t) * v;
 }
 
+__device__ __host__ inline bool operator ==(const vec3& u, const vec3& v) {
+    return (u.e[0] == v.e[0]) && (u.e[1] == v.e[1]) && (u.e[2] == v.e[2]);
+}
+
 __device__ inline double dot(const vec3& u, const vec3& v) {
     return u.e[0] * v.e[0] +
            u.e[1] * v.e[1] +

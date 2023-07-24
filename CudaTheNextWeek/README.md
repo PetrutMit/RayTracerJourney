@@ -10,3 +10,7 @@
 moving spheres with same position in time
 > 5. Adding a AABB cuda header file -> [aabb.cuh](aabb.cuh)
 > 6. Adding a BVH cuda header file -> [bvh.cuh](bvh.cuh)
+> 7. Adding a texture class -> [texture.cuh](texture.cuh)
+> 8. Modelating solid color texture
+> 9. Modelating checker texture
+> 10. Rendering spheres with checked ground -> [checkerSpheres.cu](checkerSpheres.cu)

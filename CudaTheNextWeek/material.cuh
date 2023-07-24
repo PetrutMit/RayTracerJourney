@@ -2,6 +2,8 @@
 #define MATERIAL_CUH
 
 #include "ray.cuh"
+#include "hittable.cuh"
+#include "texture.cuh"
 
 #include <curand_kernel.h>
 
@@ -44,7 +46,8 @@ class material {
 
 class lambertian : public material {
     public:
-        __device__ lambertian(const color& a, const bool light) : albedo(a), isLight(light) {}
+        __device__ lambertian(const color& a) : albedo(new constant_texture(a)) {}
+        __device__ lambertian(my_texture *a) : albedo(a) {}
 
         __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState *localRandState) const override {
             vec3 scatter_direction = rec.normal + randomUnitVector(localRandState);
@@ -52,16 +55,12 @@ class lambertian : public material {
                 scatter_direction = rec.normal;
 
             scattered = ray(rec.p, scatter_direction, r_in.time());
-            attenuation = albedo;
-            if (isLight) {
-                attenuation = attenuation * 10;
-            }
+            attenuation = albedo->value(rec.u, rec.v, rec.p);
             return true;
         }
 
     public:
-        color albedo;
-        bool isLight;
+        my_texture *albedo;
 };
 
 class metal : public material {

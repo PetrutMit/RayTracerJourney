@@ -14,6 +14,7 @@
 #include "sphere.cuh"
 #include "moving_sphere.cuh"
 #include "camera.cuh"
+#include "texture.cuh"
 
 
 #include <curand_kernel.h>

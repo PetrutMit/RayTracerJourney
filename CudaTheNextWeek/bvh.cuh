@@ -50,7 +50,6 @@ __device__ bool box_z_compare (const shared_ptr<hittable> a, const shared_ptr<hi
     return box_compare(a, b, 2);
 }
 
-
 __device__ bool bvh_node::bounding_box(float t0, float t1, aabb& b) const {
     b = box;
     return true;
