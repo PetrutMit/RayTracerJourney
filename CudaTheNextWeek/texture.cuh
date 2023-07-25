@@ -2,6 +2,7 @@
 #define TEXTURE_CUH
 
 #include "vec3.cuh"
+#include "perlin.cuh"
 
 class my_texture {
     public:
@@ -38,6 +39,21 @@ class checker_texture : public my_texture {
     public:
         my_texture* odd;
         my_texture* even;
+};
+
+class noise_texture : public my_texture {
+    public:
+        __device__ noise_texture() {}
+        __device__ noise_texture(curandState* rand_state)  {
+            noise = new perlin(rand_state);
+        }
+
+        __device__ virtual color value(float u, float v, const point3& p) const override {
+            return color(1,1,1) * noise->noise(p);
+        }
+
+    public:
+        perlin *noise;
 };
 
 #endif

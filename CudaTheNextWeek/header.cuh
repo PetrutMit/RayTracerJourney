@@ -16,7 +16,6 @@
 #include "camera.cuh"
 #include "texture.cuh"
 
-
 #include <curand_kernel.h>
 
 #define TX 8

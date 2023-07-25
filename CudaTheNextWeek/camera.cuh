@@ -2,20 +2,8 @@
 #define CAMERA_CUH
 
 #include "ray.cuh"
-#include <curand_kernel.h>
+#include "random.cuh"
 #define PI 3.141592653589793f
-
-__device__ vec3 randomInUnitDisk(curandState *state) {
-    vec3 p;
-    do {
-        p = 2.0f * vec3(curand_uniform(state), curand_uniform(state), 0.0f) - vec3(1.0f, 1.0f, 0.0f);
-    } while (dot(p, p) >= 1.0f);
-    return p;
-}
-
-__device__ float randomFloat(curandState *state, float min, float max) {
-    return min + (max - min) * curand_uniform(state);
-}
 
 class camera {
     public:

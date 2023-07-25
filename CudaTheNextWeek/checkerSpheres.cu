@@ -79,6 +79,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
         // Spheres
         my_texture *checker = new checker_texture(new constant_texture(vec3(0.2f, 0.3f, 0.1f)),
                                                new constant_texture(vec3(0.9f, 0.9f, 0.9f)));
+
         material *groundMat = new lambertian(checker);
 
         *(d_list) = new moving_sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMat);
@@ -234,7 +235,6 @@ int main(void) {
             ppmFile << ir << " " << ig << " " << ib << "\n";
     }
 }
-
     // free world of hittable objects
     freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
     checkReturn(cudaGetLastError());
