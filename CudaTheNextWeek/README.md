@@ -21,8 +21,7 @@ moving spheres with same position in time
 > 15. After a looong time spent on debugging, the perlin noise texture is now looking good. The problem was generated
 because the noise texture was dinamically allocated and hence
 it resided in global memory of divice but the perlin noise
-within the texture class was allocated in local memory of the
-device. This caused random values to be generated.
+within the texture class was allocated in local memory of the device. This caused random values to be generated.
 > 16. Finalized perlin noise texture to get our beautiful marble texture created on GPU
 > 17. Adding a light emitting material -> [material.cuh](material.cuh)
 > 18. Adding axis aligned rectangles -> [aarect.cuh](aarect.cuh)
@@ -31,3 +30,8 @@ device. This caused random values to be generated.
 formula for the ray color is not valid anymore. Instead of having just color attenuation,
 we should also accumulate the emmisive component.
 > 21. Rendering a Cornell Box with our aarectangles -> [cornellBox.cu](cornellBox.cu)
+> 22. Adding a box cuda header file -> [box.cuh](box.cuh)
+> 23. Rendering a Cornell Box with interior boxes -> [cornellBoxWithBoxes.cu](cornellBoxWithBoxes.cu)
+> 24. Modelating instance translation -> [translate.cuh](translate.cuh)
+> 25. Modelating instance rotation -> [rotate_y.cuh](rotate_y.cuh)
+> 26. Rendering a Cornell Box with transformed boxes -> [cornellBoxWithTransformedBoxes.cu](cornellBoxWithTransformedBoxes.cu)

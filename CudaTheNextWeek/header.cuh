@@ -17,13 +17,16 @@
 #include "texture.cuh"
 #include "material.cuh"
 #include "aarect.cuh"
+#include "box.cuh"
+#include "rotate_y.cuh"
+#include "translate.cuh"
 
 #include <curand_kernel.h>
 
 #define TX 8
 #define TY 8
 
-#define FLT_MAX 3.402823466e+38F
+//#define FLT_MAX 3.402823466e+38F
 
 // Adding a method to help us handle errors
 inline void checkReturn(cudaError_t err) {

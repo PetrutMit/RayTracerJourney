@@ -216,7 +216,7 @@ int main(void) {
 }
 
     // free world of hittable objects
-    //freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
+    freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
     checkReturn(cudaGetLastError());
 
     cudaStatus = cudaFree(d_list);

@@ -57,7 +57,6 @@ class metal : public material {
         float fuzz;
 };
 
-#define min(a,b) ((a) < (b) ? (a) : (b))
 
 class dielectric : public material {
     public:
@@ -68,7 +67,7 @@ class dielectric : public material {
             float etai_over_etat = rec.front_face ? (1.0f / ref_idx) : ref_idx;
 
             vec3 unit_direction = unit_vector(r_in.direction());
-            float cos_theta = min(dot(-unit_direction, rec.normal), 1.0f);
+            float cos_theta = fminf(dot(-unit_direction, rec.normal), 1.0f);
             float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
 
             bool cannotRefract = etai_over_etat * sin_theta > 1.0f;

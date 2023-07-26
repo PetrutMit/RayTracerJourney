@@ -21,5 +21,11 @@ light: light.cu
 cornellBox: cornellBox.cu
 	$(CC) $^ -o $@
 
+cornellBoxWithBoxes: cornellBoxWithBoxes.cu
+	$(CC) $^ -o $@
+
+cornellBoxWithTransformedBoxes: cornellBoxWithTransformedBoxes.cu
+	$(CC) $^ -o $@
+
 clean:
-	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox
+	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox cornellBoxWithBoxes cornellBoxWithTransformedBoxes
