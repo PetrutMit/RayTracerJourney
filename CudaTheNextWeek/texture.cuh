@@ -44,16 +44,17 @@ class checker_texture : public my_texture {
 class noise_texture : public my_texture {
     public:
         __device__ noise_texture() {}
-        __device__ noise_texture(curandState* rand_state)  {
+        __device__ noise_texture(curandState* rand_state, float sc) : scale(sc) {
             noise = new perlin(rand_state);
         }
 
         __device__ virtual color value(float u, float v, const point3& p) const override {
-            return color(1,1,1) * noise->noise(p);
+            return color(1,1,1) * 0.5f * (1 + sin(scale*p.z() + 10*noise->turb(p)));
         }
 
     public:
         perlin *noise;
+        float scale;
 };
 
 #endif

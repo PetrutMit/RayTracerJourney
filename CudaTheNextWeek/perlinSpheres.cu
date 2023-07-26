@@ -1,5 +1,6 @@
 #include "header.cuh"
 
+
 #define SPHERE_COUNT 2
 
 __device__ color rayColor(const ray& r, hittable **world, curandState *localRandState) {
@@ -74,7 +75,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         *(d_world) = new hittable_list(d_list, SPHERE_COUNT);
 
-        noise_texture *perlinTexture = new noise_texture(randState);
+        noise_texture *perlinTexture = new noise_texture(randState, 4.0f);
 
         *(d_list) = new moving_sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new lambertian(perlinTexture));
         *(d_list + 1) = new moving_sphere(vec3(0.0f, 2.0f, 0.0f), 2.0f, new lambertian(perlinTexture));

@@ -23,4 +23,5 @@ because the noise texture was dinamically allocated and hence
 it resided in global memory of divice but the perlin noise
 within the texture class was allocated in local memory of the
 device. This caused random values to be generated.
+> 16. Finalized perlin noise texture to get our beautiful marble texture created on GPU
 
