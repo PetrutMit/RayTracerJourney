@@ -15,6 +15,8 @@
 #include "moving_sphere.cuh"
 #include "camera.cuh"
 #include "texture.cuh"
+#include "material.cuh"
+#include "aarect.cuh"
 
 #include <curand_kernel.h>
 

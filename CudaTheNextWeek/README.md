@@ -24,4 +24,10 @@ it resided in global memory of divice but the perlin noise
 within the texture class was allocated in local memory of the
 device. This caused random values to be generated.
 > 16. Finalized perlin noise texture to get our beautiful marble texture created on GPU
-
+> 17. Adding a light emitting material -> [material.cuh](material.cuh)
+> 18. Adding axis aligned rectangles -> [aarect.cuh](aarect.cuh)
+> 19. Rendering a light emitting rectangle -> [light.cu](light.cu)
+> 20. Since adding the emmisive component to ray color calculation, the step dependency
+formula for the ray color is not valid anymore. Instead of having just color attenuation,
+we should also accumulate the emmisive component.
+> 21. Rendering a Cornell Box with our aarectangles -> [cornellBox.cu](cornellBox.cu)

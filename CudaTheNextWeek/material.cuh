@@ -12,6 +12,10 @@ struct hit_record;
 class material {
     public:
         __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *localRandState) const = 0;
+
+        __device__ virtual color emitted(float u, float v, const point3& p) const {
+            return color(0.0f, 0.0f, 0.0f);
+        }
 };
 
 class lambertian : public material {
@@ -89,6 +93,23 @@ class dielectric : public material {
             r0 = r0 * r0;
             return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
         }
+};
+
+class diffuse_light : public material {
+    public:
+        __device__ diffuse_light(my_texture *a) : emit(a) {}
+        __device__ diffuse_light(color c) : emit(new constant_texture(c)) {}
+
+        __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState *localRandState) const override {
+            return false;
+        }
+
+        __device__ virtual color emitted(float u, float v, const point3& p) const override {
+            return emit->value(u, v, p);
+        }
+
+    public:
+        my_texture *emit;
 };
 
 #endif

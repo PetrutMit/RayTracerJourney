@@ -15,5 +15,11 @@ perlinSpheres: perlinSpheres.cu
 test_random: test_random.cu
 	$(CC) $^ -o $@
 
+light: light.cu
+	$(CC) $^ -o $@
+
+cornellBox: cornellBox.cu
+	$(CC) $^ -o $@
+
 clean:
-	rm -f movingSpheres checkerSpheres perlinSpheres test_random
+	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox
