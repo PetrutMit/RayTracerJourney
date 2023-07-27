@@ -5,6 +5,8 @@
 #include <cmath>
 #include <random>
 
+#define FLT_MAX 3.402823466e+38F
+
 inline double random_double() {
     // Returns a random real in [0,1).
     return rand() / (RAND_MAX + 1.0);

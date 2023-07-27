@@ -12,14 +12,17 @@ class translate : public hittable {
         __device__ virtual bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const override;
         __device__ virtual bool bounding_box(float t0, float t1, aabb& output_box) const override;
 
-
     public:
         hittable *ptr;
         vec3 offset;
+        ray *moved_r;
 };
 
 __device__ bool translate::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
-    ray moved_r(r.origin() - offset, r.direction(), r.time());
+
+    // This line is problematic
+    ray moved_r = ray(r.origin() - offset, r.direction(), r.time());
+
     if (!ptr->hit(moved_r, t_min, t_max, rec))
         return false;
 

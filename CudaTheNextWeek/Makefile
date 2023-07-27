@@ -1,6 +1,7 @@
 .PHONY: clean
 
 CC=nvcc
+DEBUG=-g -G
 FLAGS=-lineinfo
 
 movingSpheres: movingSpheres.cu
@@ -27,5 +28,8 @@ cornellBoxWithBoxes: cornellBoxWithBoxes.cu
 cornellBoxWithTransformedBoxes: cornellBoxWithTransformedBoxes.cu
 	$(CC) $^ -o $@
 
+cornellBoxWithSmoke: cornellBoxWithSmoke.cu
+	$(CC) $^ -o $@
+
 clean:
-	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox cornellBoxWithBoxes cornellBoxWithTransformedBoxes
+	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox cornellBoxWithBoxes cornellBoxWithTransformedBoxes cornellBoxWithSmoke

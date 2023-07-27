@@ -5,8 +5,6 @@
 #include "vec3.cuh"
 #include "ray.cuh"
 
-#define FLT_MAX 3.402823466e+38F
-
 __device__ inline float degrees_to_radians(float degrees) {
     return degrees * PI / 180.0f;
 }

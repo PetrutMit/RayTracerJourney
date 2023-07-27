@@ -20,6 +20,7 @@
 #include "box.cuh"
 #include "rotate_y.cuh"
 #include "translate.cuh"
+#include "constant_medium.cuh"
 
 #include <curand_kernel.h>
 

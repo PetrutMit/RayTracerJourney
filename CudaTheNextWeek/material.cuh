@@ -111,4 +111,18 @@ class diffuse_light : public material {
         my_texture *emit;
 };
 
+class isotropic : public material {
+    public:
+        __device__ isotropic(color c) : albedo(new constant_texture(c)) {}
+        __device__ isotropic(my_texture *a) : albedo(a) {}
+
+        __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState *localRandState) const override {
+            scattered = ray(rec.p, randomInUnitSphere(localRandState), r_in.time());
+            attenuation = albedo->value(rec.u, rec.v, rec.p);
+            return true;
+        }
+    public:
+        my_texture *albedo;
+};
+
 #endif

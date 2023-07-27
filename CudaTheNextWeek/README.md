@@ -35,3 +35,8 @@ we should also accumulate the emmisive component.
 > 24. Modelating instance translation -> [translate.cuh](translate.cuh)
 > 25. Modelating instance rotation -> [rotate_y.cuh](rotate_y.cuh)
 > 26. Rendering a Cornell Box with transformed boxes -> [cornellBoxWithTransformedBoxes.cu](cornellBoxWithTransformedBoxes.cu)
+> 27. Modelating a constant medium -> [constant_medium.cuh](constant_medium.cuh)
+> 28. Adding isotropic material support -> [material.cuh](material.cuh)
+> 29. Rendering a Cornell Box with smoke and fog -> [cornellBoxWithSmoke.cu](cornellBoxWithSmoke.cu)
+> 30. After lots of debugging, the above one still gives
+a CUDA error. For now, I will leave it like this.
