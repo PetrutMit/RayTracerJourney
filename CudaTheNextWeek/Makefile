@@ -31,5 +31,8 @@ cornellBoxWithTransformedBoxes: cornellBoxWithTransformedBoxes.cu
 cornellBoxWithSmoke: cornellBoxWithSmoke.cu
 	$(CC) $^ -o $@
 
+finalScene: finalScene.cu
+	$(CC) $^ -o $@
+
 clean:
-	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox cornellBoxWithBoxes cornellBoxWithTransformedBoxes cornellBoxWithSmoke
+	rm -f movingSpheres checkerSpheres perlinSpheres test_random light cornellBox cornellBoxWithBoxes cornellBoxWithTransformedBoxes cornellBoxWithSmoke finalScene

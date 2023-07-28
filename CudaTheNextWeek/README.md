@@ -40,3 +40,6 @@ we should also accumulate the emmisive component.
 > 29. Rendering a Cornell Box with smoke and fog -> [cornellBoxWithSmoke.cu](cornellBoxWithSmoke.cu)
 > 30. After lots of debugging, the above one still gives
 a CUDA error. For now, I will leave it like this.
+> 31. Rendering the final scene -> [finalScene.cu](finalScene.cu)
+> 32. After some serious debugging, BVH is integrated in the final scene. :))
+> 33. Hopefully, after some improvements, the final scene will be perfect tomorrow.
