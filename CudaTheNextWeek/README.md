@@ -2,7 +2,7 @@
 
 # CUDA Implementation for Ray Tracing The Next Week
 
-> Following the above steps, I ray traced those images :) :
+> Following the steps mentioned below, I ray traced those images :) :
 > 1. ![Moving Spheres](Images/moving_spheres.jpg)
 > 2. ![Checker Spheres](Images/checker_spheres.jpg)
 > 3. ![Perlin Spheres 1](Images/perlin_spheres1.jpg)
