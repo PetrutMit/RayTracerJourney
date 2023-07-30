@@ -26,6 +26,8 @@ class bvh_node : public hittable {
         hittable *left;
         hittable *right;
         aabb box;
+        hittable **hittable_objects;
+
 };
 
 __device__  bool box_compare(hittable *a,hittable *b, int axis) {
@@ -57,19 +59,33 @@ __device__ bool bvh_node::bounding_box(float t0, float t1, aabb& b) const {
 
 __device__ bool bvh_node::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
 
-    if (!box.hit(r, t_min, t_max))
-        return false;
+    // Should also take here an iterative approach instead of
+    // the handy recursive one
+    const bvh_node *stack[64];
+    int stackTop = 0;
+    bool hit;
 
-    // // Should also take here an iterative approach instead of
-    // // the handy recursive one
+    stack[stackTop++] = this;
 
-    // bool found = false;
-    // aabb box_left, box_right;
+    while (stackTop) {
+        const bvh_node *currentNode = stack[--stackTop];
 
-    bool hit_left = left->hit(r, t_min, t_max, rec);
-    bool hit_right = right->hit(r, t_min, hit_left ? rec.t : t_max, rec);
+        if (!currentNode->box.hit(r, t_min, t_max))
+            continue;
 
-    return hit_left || hit_right;
+        if (currentNode->left == currentNode->right) {
+            // Reached a leaf node
+            hit = currentNode->left->hit(r, t_min, t_max, rec);
+            if (hit)
+                return true;
+        } else {
+            // Push the children onto the stack
+            stack[stackTop++] = (bvh_node*)currentNode->left;
+            stack[stackTop++] = (bvh_node*)currentNode->right;
+        }
+    }
+
+    return false;
 }
 
 __device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, curandState *localState) {
@@ -104,11 +120,17 @@ __device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, cur
                 comparator = box_z_compare;
                 break;
         }
+        int nodeSize;
+        if (n % size == 0)
+            nodeSize = n/size;
+        else
+            nodeSize = n/size + 1;
+
         // Sort sublists of objects along axis
-        for (int i = 0; i < n; i += n/size) {
+        for (int i = 0; i < n; i += nodeSize) {
             //Sort the list of objects along the axis
             int left = i;
-            int right = i + n/size;
+            int right = i + nodeSize;
             if (right > n)
                 right = n;
             thrust::sort(list + left, list + right, comparator);
@@ -152,56 +174,5 @@ __device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, cur
     box = surrounding_box(nodes[0]->box, nodes[1]->box);
     }
 }
-
-// __device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, curandState *state) : hittable_objects(l){
-
-//     // Create a modifiable array of the source scene objects
-//     hittable **src_objects = new hittable*[n];
-
-//     for (int i = 0; i < n; i++) {
-//         src_objects[i] = hittable_objects[i];
-//     }
-
-//     int axis = randomInt(state, 0, 2);
-//     bool (*comparator)(hittable*, hittable*);
-
-//     switch (axis) {
-//         case 0:
-//             comparator = box_x_compare;
-//             break;
-//         case 1:
-//             comparator = box_y_compare;
-//             break;
-//         case 2:
-//             comparator = box_z_compare;
-//             break;
-//     }
-
-//     if (n == 1) {
-//         left = right = src_objects[0];
-//     } else if (n == 2) {
-//         if (comparator(src_objects[0], src_objects[1])) {
-//             left = src_objects[0];
-//             right = src_objects[1];
-//         } else {
-//             left = src_objects[1];
-//             right = src_objects[0];
-//         }
-//     } else {
-//         thrust::sort(src_objects, src_objects + n, comparator);
-
-//         int mid = n/2;
-//         left = new bvh_node(src_objects, mid, time0, time1, state);
-//         right = new bvh_node(src_objects + mid, n - mid, time0, time1, state);
-//     }
-
-//     aabb box_left, box_right;
-
-//     if (!left->bounding_box(time0, time1, box_left) || !right->bounding_box(time0, time1, box_right))
-//         printf("No bounding box in bvh_node constructor.\n");
-
-//     box = surrounding_box(box_left, box_right);
-// }
-
 
 #endif

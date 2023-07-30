@@ -43,3 +43,9 @@ a CUDA error. For now, I will leave it like this.
 > 31. Rendering the final scene -> [finalScene.cu](finalScene.cu)
 > 32. After some serious debugging, BVH is integrated in the final scene. :))
 > 33. Hopefully, after some improvements, the final scene will be perfect tomorrow.
+> 34. Found a bug, if the moving sphere is centered in vec3(0, 0, 0) then we get a
+messy image. Probably there is some division by zero somewhere.
+> The bug is not present in OneWeekend implementation. This must have
+been introduced by me in the CUDA Next Week implementation.
+> 35. Found that spheric coordinates were wrongly calculated but this did not
+solve the problem. The problem is still present.

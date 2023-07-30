@@ -24,10 +24,11 @@ class moving_sphere : public hittable {
 
     private:
         __device__ static void get_sphere_uv(const vec3& p, float& u, float& v) {
-            float phi = atan2(p.z(), p.x());
-            float theta = asin(p.y());
-            u = 1-(phi + PI) / (2*PI);
-            v = (theta + PI/2) / PI;
+            float theta = acos(-p.y());
+            float phi = atan2(-p.z(), p.x()) + PI;
+
+            u = phi / (2*PI);
+            v = theta / PI;
         }
 
     public:

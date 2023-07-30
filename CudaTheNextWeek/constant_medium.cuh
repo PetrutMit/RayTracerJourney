@@ -11,7 +11,7 @@
 
 class constant_medium : public hittable {
     public:
-        __device__ constant_medium(hittable *b, float d, my_texture *a, curandState *state) : boundary(b), neg_inv_density(-1/d), phase_function(new isotropic(a)), rand_state(state) {}
+        __device__ constant_medium(hittable *b, float d, my_texture *a, curandState *state) : boundary(b), neg_inv_density(-1.0f/d), phase_function(new isotropic(a)), rand_state(state) {}
         __device__ constant_medium(hittable *b, float d, color c, curandState *state) : boundary(b), neg_inv_density(-1/d), phase_function(new isotropic(c)), rand_state(state) {}
         __device__ ~constant_medium() {
             delete boundary;
@@ -52,8 +52,8 @@ __device__ bool constant_medium::hit(const ray& r, float t_min, float t_max, hit
     const float ray_length = r.direction().length();
     const float distance_inside_boundary = (rec2.t - rec1.t) * ray_length;
 
-    const float hit_distance = neg_inv_density * log(randomFloat(rand_state, 0, 1));
-    //const float hit_distance = neg_inv_density * logf(curand_uniform(rand_state));
+    //const float hit_distance = neg_inv_density * log(randomFloat(rand_state, 0, 1));
+    const float hit_distance = neg_inv_density * logf(curand_uniform(rand_state));
 
     if (hit_distance > distance_inside_boundary)
         return false;

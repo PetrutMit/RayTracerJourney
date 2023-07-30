@@ -3,13 +3,18 @@
 #include "random.cuh"
 #include "bvh.cuh"
 
-#define SPHERE_COUNT 0
-#define RECTAGLE_COUNT 9
-
-#define OBJECT_COUNT SPHERE_COUNT + RECTAGLE_COUNT
+// Object count is the number of hittables which get added to the world. It is not
+// the actual number of objects in the world.
+// For example, a box is made of 6 hittables
+// A correct number of objects would be :
+// 1 bvh node of 400 boxes => 400 * 6 = 2400
+// 1 bvh node of 1000 spheres => 1000
+// 9 other objects => 9
+// Total = 3409
+#define OBJECT_COUNT 11
 
 /* Iterative ray color function
- * Recursive call woulde be:
+ * Recursive call would be:
     return emitted + attenuarion * rec_call
  * So, general recursive formula would be:
  * r(1) = e1 + a1 * r(0)
@@ -20,16 +25,16 @@
 * Step i would be:
     curAttenuation = curAttenuation * attenuation
     curEmitted = curEmitted + curAttenuation * emitted
-
 */
 __device__ color rayColor(const ray& r, const color& background, hittable **world, curandState *localRandState) {
     ray curRay = r;
 
     color curAttenuation(1.0f, 1.0f, 1.0f);
     color curEmitted(0.0f, 0.0f, 0.0f);
+    hit_record rec;
+
 
     for (int i = 0; i < 50; i ++) {
-        hit_record rec;
         if ((*world)->hit(curRay, 0.001f, FLT_MAX, rec)) {
             ray scattered;
             color attenuation;
@@ -112,14 +117,13 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
                 float z1 = z0 + w;
 
                 boxes[cnt ++] = new box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
-                //*(d_list + cnt++) = new box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
             }
         }
 
         *(d_list) = new bvh_node(boxes, cnt, 0.0f, 1.0f, randState);
         diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
 
-        *(d_list + 1) = new xz_rect(123.0f, 423.0f, 147.0f, 412.0f, 554.0f, light);
+        *(d_list + 1) = new xz_rect(123.0f, 600.0f, 147.0f, 600.0f, 554.0f, light);
 
         vec3 center1 = vec3(400.0f, 400.0f, 200.0f);
         vec3 center2 = center1 + vec3(30.0f, 0.0f, 0.0f);
@@ -131,21 +135,31 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
         moving_sphere *boundary = new moving_sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new dielectric(1.5f));
         *(d_list + 5) = boundary;
         *(d_list + 6) = new constant_medium(boundary, 0.2f, color(0.2f, 0.4f, 0.9f), randState);
-        boundary = new moving_sphere(vec3(0.0f, 0.0f, 0.0f), 5000.0f, new dielectric(1.5f));
+        boundary = new moving_sphere(vec3(0.0f, 0.0f, 0.0f), 5000.0f, new lambertian(color(0.2f, 0.4f, 0.9f)));
         *(d_list + 7) = new constant_medium(boundary, 0.0001f, color(1.0f, 1.0f, 1.0f), randState);
 
-        noise_texture *pertext = new noise_texture(randState, 4.0f);
+        noise_texture *pertext = new noise_texture(randState, 0.1f);
         *(d_list + 8) = new moving_sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
 
-        // hittable **boxes2 = new hittable*[1000];
-        // lambertian *white = new lambertian(color(0.73f, 0.73f, 0.73f));
-        // for (int i = 0; i < 1000; i ++) {
-        //     boxes2[i] = new box(vec3(randomFloat(randState, 0.0f, 165.0f), randomFloat(randState, 0.0f, 165.0f), randomFloat(randState, 0.0f, 165.0f)), vec3(165.0f, 165.0f, 165.0f), white);
-        // }
+        pertext = new noise_texture(randState, 4.0f);
+        *(d_list + 9) = new moving_sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new lambertian(pertext));
 
-        // *(d_list + 9) = new translate(new rotate_y(new bvh_node(boxes2, 1000, 0.0f, 1.0f, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+        hittable **boxes2 = new hittable*[1000];
+        lambertian *white = new lambertian(color(0.73f, 0.73f, 0.73f));
+        for (int i = 0; i < 1000; i ++) {
+            boxes2[i] = new moving_sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, white);
+        }
 
-        *(d_cam) = new camera(vec3(478.0f, 278.0f, -600.0f), vec3(278.0f, 278.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), 40.0f, 1.0f, 0.0f, 10.0f, 0.0f, 1.0f);
+        *(d_list + 10) = new translate(new rotate_y(new bvh_node(boxes2, 1000, 0.0f, 1.0f, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+
+        vec3 lookFrom(478.0f, 278.0f, -600.0f);
+        vec3 lookAt(278.0f, 278.0f, 0.0f);
+        float distToFocus = 10.0f;
+        float aperture = 0.0f;
+        float aspect_ratio = 3.0f / 2.0f;
+        float vfov = 40.0f;
+
+        *(d_cam) = new camera(lookFrom, lookAt, vec3(0.0f, 1.0f, 0.0f), vfov, aspect_ratio, aperture, distToFocus, 0.0f, 1.0f);
     }
 }
 
@@ -161,8 +175,8 @@ __global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam)
 
 int main(void) {
     int nx = 1200;
-    int ny = 1200;
-    int ns = 100;
+    int ny = 800;
+    int ns = 10;
 
     int num_pixels = nx * ny;
 
@@ -197,9 +211,10 @@ int main(void) {
     cudaStatus = cudaMalloc((void**)&d_cam, sizeof(camera*));
     checkReturn(cudaStatus);
 
+    // Even though we have an iterative approach, we still need a bigger stack
     size_t size;
     cudaDeviceGetLimit(&size, cudaLimitStackSize);
-    cudaDeviceSetLimit(cudaLimitStackSize, 8 * size);
+    cudaDeviceSetLimit(cudaLimitStackSize, 2 * size);
 
     dim3 blockCount(nx + TX - 1 / TX, ny + TY - 1 / TY);
     dim3 blockSize(TX, TY);
@@ -251,7 +266,7 @@ int main(void) {
 }
 
     // free world of hittable objects
-    //freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
+    freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
     checkReturn(cudaGetLastError());
 
     cudaStatus = cudaFree(d_list);
