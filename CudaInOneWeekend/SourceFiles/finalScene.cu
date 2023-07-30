@@ -1,7 +1,7 @@
 /* Main file to Ray Trace a scene with multiple spheres
 */
 
-#include "header.cuh"
+#include "../HeaderFiles/header.cuh"
 
 #define SPHERE_COUNT 489
 

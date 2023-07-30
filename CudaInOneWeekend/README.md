@@ -3,7 +3,7 @@
 # CUDA Implementation for Ray Tracing in One Weekend
 
 > Following the steps mentioned below, I ray traced those images :) :
-> 1. ![PPM Format](Images/PPM_Format.jpg)
+> 1. ![PPM Format](Images/PPM_format.jpg)
 > 2. ![Gradient](Images/gradient.jpg)
 > 3. ![Gradient Sphere](Images/gradient_sphere.jpg)
 > 4. ![Gradient Sphere Normal](Images/gradient_sphere_normal.jpg)
