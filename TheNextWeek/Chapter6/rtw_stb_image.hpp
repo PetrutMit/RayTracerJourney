@@ -1,6 +1,8 @@
 #ifndef RTW_STB_IMAGE_HPP
 #define RTW_STB_IMAGE_HPP
 
+// stb_image is no longer present in this implement
+// because it affects the percentage of the CUDA code presented by GIT
 
 // Disable pedantic warnings for this external library.
 #ifdef _MSC_VER
