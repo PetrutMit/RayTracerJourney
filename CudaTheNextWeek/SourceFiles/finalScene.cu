@@ -95,7 +95,7 @@ __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hitta
     fb[pixelIndex] = pixelColor;
 }
 
-__global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState) {
+__global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState, bool useBVH = true) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         *(d_world) = new hittable_list(d_list, OBJECT_COUNT);
 
@@ -119,8 +119,11 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
                 boxes[cnt ++] = new box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
             }
         }
-
-        *(d_list) = new bvh_node(boxes, cnt, 0.0f, 1.0f, randState);
+        if (useBVH) {
+            *(d_list) = new bvh_node(boxes, cnt, 0.0f, 1.0f, randState);
+        } else {
+            *(d_list) = new hittable_list(boxes, cnt);
+        }
         diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
 
         *(d_list + 1) = new xz_rect(123.0f, 600.0f, 147.0f, 600.0f, 554.0f, light);
@@ -150,7 +153,11 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
             boxes2[i] = new moving_sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, white);
         }
 
-        *(d_list + 10) = new translate(new rotate_y(new bvh_node(boxes2, 1000, 0.0f, 1.0f, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+        if (useBVH) {
+            *(d_list + 10) = new translate(new rotate_y(new bvh_node(boxes2, 1000, 0.0f, 1.0f, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+        } else {
+            *(d_list + 10) = new hittable_list(boxes2, 1000);
+        }
 
         vec3 lookFrom(478.0f, 278.0f, -600.0f);
         vec3 lookAt(278.0f, 278.0f, 0.0f);
@@ -173,10 +180,17 @@ __global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam)
     }
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    // First argument should be 1 if we want to use BVH
+    if (argc != 2) {
+        std::cerr << "Usage: ./final_scene <useBVH>\n";
+        return 1;
+    }
+
+    bool useBVH = atoi(argv[1]);
     int nx = 1200;
     int ny = 800;
-    int ns = 10;
+    int ns = 2;
 
     int num_pixels = nx * ny;
 
@@ -223,7 +237,7 @@ int main(void) {
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
-    allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_worldRandState);
+    allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_worldRandState, useBVH);
     checkReturn(cudaGetLastError());
 
     // Create events until world is created
@@ -243,25 +257,26 @@ int main(void) {
 
     float milliseconds = 0;
     checkReturn(cudaEventElapsedTime(&milliseconds, start, stop));
-    std::cerr << "Elapsed time: " << milliseconds << " ms\n";
+    //std::cerr << "Elapsed time: " << milliseconds << " ms\n";
+    std::cout << milliseconds / 1000.0;
 
     color *fb_cpu = (color*)malloc(num_pixels * sizeof(color));
     cudaStatus = cudaMemcpy(fb_cpu, fb_gpu, num_pixels * sizeof(color), cudaMemcpyDeviceToHost);
     checkReturn(cudaStatus);
 
     // Output FB as Image
-    std::ofstream ppmFile("final_scene.ppm");
+    //std::ofstream ppmFile("final_scene.ppm");
 
-    ppmFile << "P3\n" << nx << " " << ny << "\n255\n";
+    //ppmFile << "P3\n" << nx << " " << ny << "\n255\n";
 
     for (int j = ny - 1; j >= 0; j--) {
-        std::cerr << "\rScanlines remaining: " << j << " " << std::flush;
+        //std::cerr << "\rScanlines remaining: " << j << " " << std::flush;
         for (int i = 0; i < nx; i++) {
             size_t pixelIndex = j * nx + i;
             int ir = static_cast<int>(fb_cpu[pixelIndex].e[0]);
             int ig = static_cast<int>(fb_cpu[pixelIndex].e[1]);
             int ib = static_cast<int>(fb_cpu[pixelIndex].e[2]);
-            ppmFile << ir << " " << ig << " " << ib << "\n";
+            //ppmFile << ir << " " << ig << " " << ib << "\n";
     }
 }
 
@@ -288,5 +303,5 @@ int main(void) {
     checkReturn(cudaStatus);
 
     free(fb_cpu);
-    std::cerr << "\nDone.\n";
+    //std::cerr << "\nDone.\n";
 }
