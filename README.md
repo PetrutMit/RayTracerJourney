@@ -28,8 +28,10 @@
 <hr>
 
 > 5. Comparisons between Cpp and CUDA versions and BVH and non-BVH versions were made using  this script [SpeedUpComputer.sh](SpeedUpComputer.sh)
+>
 > Results after running the script on an i7-10750H CPU @ 2.60GHz and a GeForce RTX 2060 GPU:
->InOneWeekend:
+```bash
+InOneWeekend:
 Computing CPU time...
 CPU Run 1: 107.349
 CPU Run 2: 107.634
@@ -68,3 +70,4 @@ With and without BVH:
 No BVH: 27.411
 BVH: 3.033
 Speedup: 9.03758654797230464886
+```
