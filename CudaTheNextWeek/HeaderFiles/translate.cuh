@@ -7,41 +7,32 @@
 
 class translate : public hittable {
     public:
-        __device__ translate(hittable *p, const vec3& displacement) : ptr(p), offset(displacement) {}
-        __device__ ~translate() { delete ptr; }
-        __device__ virtual bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const override;
-        __device__ virtual bool bounding_box(float t0, float t1, aabb& output_box) const override;
+        __device__ translate(hittable *p, const vec3& displacement) : ptr(p), offset(displacement) {
+            bbox = p->bounding_box() + offset;
+        }
+
+        __device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+        __device__ virtual aabb bounding_box() const override;
 
     public:
         hittable *ptr;
         vec3 offset;
-        ray *moved_r;
+        aabb bbox;
 };
 
-__device__ bool translate::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
-
+__device__ bool translate::hit(const ray& r, interval ray_t, hit_record& rec) const {
     // This line is problematic
     ray moved_r = ray(r.origin() - offset, r.direction(), r.time());
 
-    if (!ptr->hit(moved_r, t_min, t_max, rec))
+    if (!ptr->hit(moved_r, ray_t, rec))
         return false;
-
     rec.p += offset;
-    rec.set_face_normal(moved_r, rec.normal);
 
     return true;
 }
 
-__device__ bool translate::bounding_box(float t0, float t1, aabb& output_box) const {
-    if (!ptr->bounding_box(t0, t1, output_box))
-        return false;
-
-    output_box = aabb(
-        output_box.min() + offset,
-        output_box.max() + offset
-    );
-
-    return true;
+__device__ aabb translate::bounding_box() const {
+    return bbox;
 }
 
 #endif

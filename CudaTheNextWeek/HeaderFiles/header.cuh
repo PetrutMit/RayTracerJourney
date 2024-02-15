@@ -12,15 +12,14 @@
 #include "ray.cuh"
 #include "hittable_list.cuh"
 #include "sphere.cuh"
-#include "moving_sphere.cuh"
 #include "camera.cuh"
 #include "texture.cuh"
 #include "material.cuh"
-#include "aarect.cuh"
-#include "box.cuh"
 #include "rotate_y.cuh"
 #include "translate.cuh"
 #include "constant_medium.cuh"
+#include "interval.cuh"
+#include "quad.cuh"
 
 #include <curand_kernel.h>
 

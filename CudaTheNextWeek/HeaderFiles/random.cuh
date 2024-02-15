@@ -20,7 +20,10 @@ __device__ vec3 randomVector(curandState *localRandState) {
 }
 
 __device__ vec3 randomVectorBetween(curandState *localRandState, float min, float max) {
-    return randomVector(localRandState) * randomFloat(localRandState, min, max);
+    float a = randomFloat(localRandState, min, max);
+    float b = randomFloat(localRandState, min, max);
+    float c = randomFloat(localRandState, min, max);
+    return vec3(a,b,c);
 }
 
 __device__ vec3 randomInUnitDisk(curandState *state) {

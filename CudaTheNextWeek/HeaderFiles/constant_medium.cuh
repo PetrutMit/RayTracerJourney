@@ -18,8 +18,8 @@ class constant_medium : public hittable {
             delete phase_function;
         }
 
-        __device__ virtual bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const override;
-        __device__ virtual bool bounding_box(float t0, float t1, aabb& output_box) const override;
+        __device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+        __device__ virtual aabb bounding_box() const override;
 
     public:
         hittable *boundary;
@@ -28,20 +28,20 @@ class constant_medium : public hittable {
         curandState *rand_state;
 };
 
-__device__ bool constant_medium::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
+__device__ bool constant_medium::hit(const ray& r, interval ray_t, hit_record& rec) const {
     hit_record rec1, rec2;
 
-    if (!boundary->hit(r, -FLT_MAX, FLT_MAX, rec1))
+    if (!boundary->hit(r, interval(-INF, INF), rec1))
         return false;
 
-    if (!boundary->hit(r, rec1.t + 0.0001f, FLT_MAX, rec2))
+    if (!boundary->hit(r, interval(rec1.t + 0.001, INF), rec2))
         return false;
 
-    if (rec1.t < t_min)
-        rec1.t = t_min;
+    if (rec1.t < ray_t.min)
+        rec1.t = ray_t.min;
 
-    if (rec2.t > t_max)
-        rec2.t = t_max;
+    if (rec2.t > ray_t.max)
+        rec2.t = ray_t.max;
 
     if (rec1.t >= rec2.t)
         return false;
@@ -68,8 +68,8 @@ __device__ bool constant_medium::hit(const ray& r, float t_min, float t_max, hit
     return true;
 }
 
-__device__ bool constant_medium::bounding_box(float t0, float t1, aabb& output_box) const {
-    return boundary->bounding_box(t0, t1, output_box);
+__device__ aabb constant_medium::bounding_box() const {
+    return boundary->bounding_box();
 }
 
 #endif
