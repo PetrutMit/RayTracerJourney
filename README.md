@@ -18,9 +18,10 @@ the best performance possible, to get close to real-time rendering.
 was Peter Shirley's book ["Ray Tracing in One Weekend"](https://raytracing.github.io/books/RayTracingInOneWeekend.html).
 I made a thorough analysis of various CPU and GPU implements of that Ray Tracer,
 which can be found [here](/Analysis/).
-
+>
 > This proved that CUDA solution has lots of potential. A step by step implementation
 of multiple RT scenes in CUDA can be found [here](/CudaInOneWeekend/)
+<hr>
 
 > I also explored further improvements and features that can be added to the Ray Tracer.
 As a guideline, I used the book ["Ray Tracing: The Next Week"](https://raytracing.github.io/books/RayTracingTheNextWeek.html).
@@ -33,4 +34,4 @@ As a guideline, I used the book ["Ray Tracing: The Next Week"](https://raytracin
 > The total rendering time for the scene, at 5 samples per pixel, was 3.83 
 seconds. This time includes all the initializations, if only rendering time
 is considered it goes down to 1.8 seconds. With some less samples, and a denoiser we would get close to real-time rendering.
-
+<hr>
