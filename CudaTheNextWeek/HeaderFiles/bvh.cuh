@@ -1,7 +1,6 @@
 #ifndef BVH_H
 #define BVH_H
 
-
 #include "hittable.cuh"
 #include "hittable_list.cuh"
 
@@ -14,50 +13,42 @@
 class bvh_node : public hittable {
     public:
         __device__ bvh_node() {}
-        __device__ bvh_node(hittable_list *l, float time0, float time1, curandState *localState) : bvh_node(l->list, l->list_size, time0, time1, localState) {}
-        __device__ bvh_node(hittable **l, int n, float time0, float time1, curandState *localState);
-        __device__ bvh_node(hittable *left, hittable *right, aabb box)
-            : left(left), right(right), box(box) {}
+        __device__ bvh_node(hittable *left, hittable * right) {
+            _left = left;
+            _right = right;
+            _bbox = aabb(left->bounding_box(), right->bounding_box());
+        }
+        __device__ bvh_node(hittable_list *l, curandState *localState) : bvh_node(l->list, l->list_size, localState) {}
+        __device__ bvh_node(hittable **l, int n, curandState *localState);
+        
+        __device__ bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+        __device__ aabb bounding_box() const override;
+    
+    private:
+        static __device__ bool box_compare(hittable *a,hittable *b, int axis_index) {
+            aabb box_a = a->bounding_box();
+            aabb box_b = b->bounding_box();
+            
+            return box_a.axis(axis_index).min < box_b.axis(axis_index).min;
+        }
 
-        __device__ virtual bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const;
-        __device__ virtual bool bounding_box(float t0, float t1, aabb& box) const;
+        static __device__ bool box_x_compare(hittable *a, hittable *b) {
+            return box_compare(a, b, 0);
+        }
+        static __device__ bool box_y_compare(hittable *a, hittable *b) {
+            return box_compare(a, b, 1);
+        }
+        static __device__ bool box_z_compare(hittable *a, hittable *b) {
+            return box_compare(a, b, 2);
+        }
 
-    public:
-        hittable *left;
-        hittable *right;
-        aabb box;
-        hittable **hittable_objects;
-
+        hittable *_left;
+        hittable *_right;
+        aabb _bbox;
+        bool _last_level;
 };
 
-__device__  bool box_compare(hittable *a,hittable *b, int axis) {
-    aabb box_a;
-    aabb box_b;
-
-    if (!a->bounding_box(0,0, box_a) || !b->bounding_box(0,0, box_b))
-        printf("No bounding box in bvh_node constructor.\n");
-
-    return box_a.min().e[axis] < box_b.min().e[axis];
-}
-
-__device__ bool box_x_compare(hittable *a, hittable *b) {
-    return box_compare(a, b, 0);
-}
-
-__device__ bool box_y_compare(hittable *a, hittable *b) {
-    return box_compare(a, b, 1);
-}
-
-__device__ bool box_z_compare(hittable *a, hittable *b) {
-    return box_compare(a, b, 2);
-}
-
-__device__ bool bvh_node::bounding_box(float t0, float t1, aabb& b) const {
-    b = box;
-    return true;
-}
-
-__device__ bool bvh_node::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
+__device__ bool bvh_node::hit(const ray& r, interval ray_t, hit_record& rec) const {
 
     // Should also take here an iterative approach instead of
     // the handy recursive one
@@ -70,44 +61,40 @@ __device__ bool bvh_node::hit(const ray& r, float t_min, float t_max, hit_record
     while (stackTop) {
         const bvh_node *currentNode = stack[--stackTop];
 
-        if (!currentNode->box.hit(r, t_min, t_max))
+        if (!currentNode->_bbox.hit(r, ray_t))
             continue;
 
-        if (currentNode->left == currentNode->right) {
-            // Reached a leaf node
-            hit = currentNode->left->hit(r, t_min, t_max, rec);
-            if (hit)
+        if (currentNode->_last_level) {
+            hit = currentNode->_left->hit(r, ray_t, rec);
+            if (hit) {
                 return true;
+            }
+            hit = currentNode->_right->hit(r, ray_t, rec);
+            if (hit) {
+                return true;
+            }
         } else {
-            // Push the children onto the stack
-            stack[stackTop++] = (bvh_node*)currentNode->left;
-            stack[stackTop++] = (bvh_node*)currentNode->right;
+            stack[stackTop++] = (bvh_node *)currentNode->_left;
+            stack[stackTop++] = (bvh_node *)currentNode->_right;
         }
     }
-
-    return false;
+    return hit;
 }
 
-__device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, curandState *localState) {
-    if (n == 1) {
-        left = right = l[0];
-        aabb myBox;
-        if (!l[0]->bounding_box(time0, time1, myBox))
-            printf("No bounding box in bvh_node constructor.\n");
-        box = myBox;
-    } else {
-
+__device__ bvh_node::bvh_node(hittable **l, int n, curandState *localState) {
     // Get a modifiable copy of the list
     hittable **list = new hittable*[n];
     for (int i = 0; i < n; i++) {
         list[i] = l[i];
     }
 
-    //Bottom up approach to build tree
-    for (int size = 1; size < n; size *= 2) {
-        //Choose random axis to split on
+    int levels = log2f(n);
+    int nodes_per_level;
+
+    // Sort sublists of objects along axis
+    for (int level = 0; level < levels; level ++) {
+        nodes_per_level = (1 << level);
         int axis = randomInt(localState, 0, 2);
-        //Choose comparator function based on axis
         bool (*comparator)(hittable*, hittable*);
         switch (axis) {
             case 0:
@@ -120,59 +107,42 @@ __device__ bvh_node::bvh_node(hittable **l, int n, float time0, float time1, cur
                 comparator = box_z_compare;
                 break;
         }
-        int nodeSize;
-        if (n % size == 0)
-            nodeSize = n/size;
-        else
-            nodeSize = n/size + 1;
 
-        // Sort sublists of objects along axis
-        for (int i = 0; i < n; i += nodeSize) {
-            //Sort the list of objects along the axis
+        for (int i = 0; i < n; i += n / nodes_per_level) {
             int left = i;
-            int right = i + nodeSize;
+            int right = i + n / nodes_per_level;
             if (right > n)
                 right = n;
             thrust::sort(list + left, list + right, comparator);
         }
-   }
-
-    //Build tree from sorted list
-    //Bottom up approach to build tree
-    //Leaf node
-    bvh_node **nodes = new bvh_node*[n];
-    for (int i = 0; i < n; i ++) {
-        aabb myBox;
-        if (!list[i]->bounding_box(time0, time1, myBox))
-            printf("No bounding box in bvh_node constructor.\n");
-        nodes[i] = new bvh_node(l[i], l[i], myBox);
     }
 
-    delete[] list;
+    bvh_node **nodes = new bvh_node*[n/2];
 
-    // Now we have the leaf nodes, we can build the tree
-    while (n > 1) {
-        int newSize;
-        if (n % 2 == 1)
-            newSize = n/2 + 1;
-        else
-            newSize = n/2;
+    // Now we have the leaf nodes, we can build the tree - bottom up approach
+    for (int i = 0; i < n/2; i++) {
+        nodes[i] = new bvh_node(list[i*2], list[i*2 + 1]);
+        nodes[i]->_last_level = true;
+    }
 
-        int j = 0;
-        for (int i = 0; i < newSize; i ++) {
-            aabb myBox;
-            myBox = surrounding_box(nodes[j]->box, nodes[j + 1]->box);
-            nodes[i] = new bvh_node(nodes[j], nodes[j + 1], myBox);
-            j += 2;
+    n /= 2;
+
+    while (n > 2) {
+        for (int i = 0; i < n/2; i++) {
+            nodes[i] = new bvh_node(nodes[i*2], nodes[i*2 + 1]);
+            nodes[i]->_last_level = false;
         }
-
-        n = newSize;
+        n /= 2;
     }
 
-    left = nodes[0];
-    right = nodes[1];
-    box = surrounding_box(nodes[0]->box, nodes[1]->box);
-    }
+     _left = nodes[0];
+     _right = nodes[1];
+     _bbox = aabb(_left->bounding_box(), _right->bounding_box());     
 }
+
+__device__ aabb bvh_node::bounding_box() const {
+    return _bbox;
+}
+
 
 #endif
