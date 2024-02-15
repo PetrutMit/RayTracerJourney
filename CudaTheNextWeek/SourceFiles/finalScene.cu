@@ -7,11 +7,11 @@
 // the actual number of objects in the world.
 // For example, a box is made of 6 hittables
 // A correct number of objects would be :
-// 1 bvh node of 400 boxes => 400 * 6 = 2400
-// 1 bvh node of 1000 spheres => 1000
+// 1 bvh node of 256 boxes => 256 * 6 = 1536
+// 1 bvh node of 1024 spheres => 1024
 // 9 other objects => 9
-// Total = 3409
-#define OBJECT_COUNT 11
+// Total = 2569
+#define NODE_COUNT 11
 
 /* Iterative ray color function
  * Recursive call would be:
@@ -33,9 +33,8 @@ __device__ color rayColor(const ray& r, const color& background, hittable **worl
     color curEmitted(0.0f, 0.0f, 0.0f);
     hit_record rec;
 
-
     for (int i = 0; i < 50; i ++) {
-        if ((*world)->hit(curRay, 0.001f, FLT_MAX, rec)) {
+        if ((*world)->hit(curRay, interval(0.001, INF), rec)) {
             ray scattered;
             color attenuation;
             color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
@@ -97,11 +96,9 @@ __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hitta
 
 __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState, bool useBVH = true) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        *(d_world) = new hittable_list(d_list, OBJECT_COUNT);
-
         lambertian *ground = new lambertian(color(0.48f, 0.83f, 0.53f));
 
-        int boxes_per_side = 20;
+        int boxes_per_side = 16;
 
         hittable **boxes = new hittable*[boxes_per_side * boxes_per_side];
         int cnt = 0;
@@ -116,48 +113,54 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
                 float y1 = randomFloat(randState, 1.0f, 101.0f);
                 float z1 = z0 + w;
 
-                boxes[cnt ++] = new box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
+                boxes[cnt ++] = box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
             }
         }
+
         if (useBVH) {
-            *(d_list) = new bvh_node(boxes, cnt, 0.0f, 1.0f, randState);
+            *(d_list) = new bvh_node(boxes, cnt, randState);
         } else {
             *(d_list) = new hittable_list(boxes, cnt);
         }
-        diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
 
-        *(d_list + 1) = new xz_rect(123.0f, 600.0f, 147.0f, 600.0f, 554.0f, light);
+        diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
+        quad *light_shape = new quad(vec3(123.0f, 554.0f, 147.0f), vec3(300.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 265.0f), light);
+
+        *(d_list + 1) = light_shape;
 
         vec3 center1 = vec3(400.0f, 400.0f, 200.0f);
         vec3 center2 = center1 + vec3(30.0f, 0.0f, 0.0f);
 
-        *(d_list + 2) = new moving_sphere(center1, 50.0f, new lambertian(color(0.7f, 0.3f, 0.1f)), 0.0f, 1.0f, center2);
-        *(d_list + 3) = new moving_sphere(vec3(260.0f, 150.0f, 45.0f), 50.0f, new dielectric(1.5f));
-        *(d_list + 4) = new moving_sphere(vec3(0.0f, 150.0f, 145.0f), 50.0f, new metal(color(0.8f, 0.8f, 0.9f), 10.0f));
+        *(d_list + 2) = new sphere(center1, center2, 50.0f, new lambertian(color(0.7f, 0.3f, 0.1f)));
+        *(d_list + 3) = new sphere(vec3(260.0f, 150.0f, 45.0f), 50.0f, new dielectric(1.5f));
+        *(d_list + 4) = new sphere(vec3(0.0f, 150.0f, 145.0f), 50.0f, new metal(color(0.8f, 0.8f, 0.9f), 10.0f));
 
-        moving_sphere *boundary = new moving_sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new dielectric(1.5f));
+        sphere *boundary = new sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new dielectric(1.5f));
         *(d_list + 5) = boundary;
         *(d_list + 6) = new constant_medium(boundary, 0.2f, color(0.2f, 0.4f, 0.9f), randState);
-        boundary = new moving_sphere(vec3(0.0f, 0.0f, 0.0f), 5000.0f, new lambertian(color(0.2f, 0.4f, 0.9f)));
+        boundary = new sphere(vec3(0.0f, 0.0f, 0.0f), 5000.0f, new lambertian(color(0.2f, 0.4f, 0.9f)));
         *(d_list + 7) = new constant_medium(boundary, 0.0001f, color(1.0f, 1.0f, 1.0f), randState);
 
         noise_texture *pertext = new noise_texture(randState, 0.1f);
-        *(d_list + 8) = new moving_sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
+        *(d_list + 8) = new sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
 
         pertext = new noise_texture(randState, 4.0f);
-        *(d_list + 9) = new moving_sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new lambertian(pertext));
+        *(d_list + 9) = new sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new lambertian(pertext));
 
-        hittable **boxes2 = new hittable*[1000];
+
+        hittable **spheres = new hittable*[1024];
         lambertian *white = new lambertian(color(0.73f, 0.73f, 0.73f));
-        for (int i = 0; i < 1000; i ++) {
-            boxes2[i] = new moving_sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, white);
+        for (int i = 0; i < 1024; i ++) {
+            spheres[i] = new sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, white);
         }
 
         if (useBVH) {
-            *(d_list + 10) = new translate(new rotate_y(new bvh_node(boxes2, 1000, 0.0f, 1.0f, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
-        } else {
-            *(d_list + 10) = new hittable_list(boxes2, 1000);
+             *(d_list + 10) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+         } else {
+             *(d_list + 10) = new translate(new rotate_y(new hittable_list(spheres, 1024), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
         }
+
+        *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
         vec3 lookFrom(478.0f, 278.0f, -600.0f);
         vec3 lookAt(278.0f, 278.0f, 0.0f);
@@ -172,7 +175,7 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
 
 __global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i = 0; i < OBJECT_COUNT; i++) {
+        for (int i = 0; i < NODE_COUNT; i++) {
             delete *(d_list + i);
         }
         delete *(d_world);
@@ -188,9 +191,9 @@ int main(int argc, char **argv) {
     }
 
     bool useBVH = atoi(argv[1]);
-    int nx = 1200;
-    int ny = 800;
-    int ns = 2;
+    int nx = 900;
+    int ny = 600;
+    int ns = 10;
 
     int num_pixels = nx * ny;
 
@@ -213,7 +216,7 @@ int main(int argc, char **argv) {
 
     // create world of hittable objects
     hittable **d_list;
-    cudaStatus = cudaMalloc((void**)&d_list, OBJECT_COUNT * sizeof(hittable*));
+    cudaStatus = cudaMalloc((void**)&d_list, NODE_COUNT * sizeof(hittable*));
     checkReturn(cudaStatus);
 
     hittable **d_world;
@@ -240,45 +243,31 @@ int main(int argc, char **argv) {
     allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_worldRandState, useBVH);
     checkReturn(cudaGetLastError());
 
-    // Create events until world is created
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
     checkReturn(cudaDeviceSynchronize());
-    checkReturn(cudaEventRecord(start));
 
     render<<<blockCount, blockSize>>>(fb_gpu, nx, ny, ns, d_cam, d_world, d_randState);
 
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
-    checkReturn(cudaEventRecord(stop));
-
-    float milliseconds = 0;
-    checkReturn(cudaEventElapsedTime(&milliseconds, start, stop));
-    //std::cerr << "Elapsed time: " << milliseconds << " ms\n";
-    std::cout << milliseconds / 1000.0;
-
     color *fb_cpu = (color*)malloc(num_pixels * sizeof(color));
     cudaStatus = cudaMemcpy(fb_cpu, fb_gpu, num_pixels * sizeof(color), cudaMemcpyDeviceToHost);
     checkReturn(cudaStatus);
 
     // Output FB as Image
-    //std::ofstream ppmFile("final_scene.ppm");
+    std::ofstream ppmFile("final_scene.ppm");
 
-    //ppmFile << "P3\n" << nx << " " << ny << "\n255\n";
+    ppmFile << "P3\n" << nx << " " << ny << "\n255\n";
 
     for (int j = ny - 1; j >= 0; j--) {
-        //std::cerr << "\rScanlines remaining: " << j << " " << std::flush;
         for (int i = 0; i < nx; i++) {
             size_t pixelIndex = j * nx + i;
             int ir = static_cast<int>(fb_cpu[pixelIndex].e[0]);
             int ig = static_cast<int>(fb_cpu[pixelIndex].e[1]);
             int ib = static_cast<int>(fb_cpu[pixelIndex].e[2]);
-            //ppmFile << ir << " " << ig << " " << ib << "\n";
+            ppmFile << ir << " " << ig << " " << ib << "\n";
+        }
     }
-}
 
     // free world of hittable objects
     freeWorld<<<1, 1>>>(d_list, d_world, d_cam);
@@ -303,5 +292,4 @@ int main(int argc, char **argv) {
     checkReturn(cudaStatus);
 
     free(fb_cpu);
-    //std::cerr << "\nDone.\n";
 }
