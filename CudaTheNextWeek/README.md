@@ -13,7 +13,7 @@
 > 8. ![Cornell Box with Smoke](Images/cornell_box_with_smoke.jpg)
 > 9. ![Light](Images/light.jpg)
 > 10. ![Final Scene 1](Images/final_scene1.jpg)
-> 11. ![Final Scene 2](Images/final_scene2.jpg)
+> 11. ![Final Scene 2](Images/final_scene3.jpg)
 
 > Steps taken to make our CUDA implementation:
 > 1. Starting from CUDA In One Weekend implementation and adding the new functionalities
