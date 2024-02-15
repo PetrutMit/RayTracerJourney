@@ -24,5 +24,10 @@ of multiple RT scenes in CUDA can be found [here](/CudaInOneWeekend/)
 
 > I also explored further improvements and features that can be added to the Ray Tracer.
 As a guideline, I used the book ["Ray Tracing: The Next Week"](https://raytracing.github.io/books/RayTracingTheNextWeek.html).
-The most significant improvement was the implementation of a BVH (Bounding Volume Hierarchy) for the Ray Tracer. This was quite a challenge in CUDA, but the results were very satisfying.
+> The most significant improvement was the implementation of a BVH (Bounding Volume Hierarchy) for the Ray Tracer. This was quite a challenge in CUDA, but the results were very satisfying.
+> The [final scene](/CudaTheNextWeek/SourceFiles/finalScene.cu) has a total of
+2569 objects and renders a 900x600 image. BVH brought here a speedup of aprox. 13x.
+> The total rendering time for the scene, at 5 samples per pixel, was 3.83 
+seconds. This time includes all the initializations, if only rendering time
+is considered it goes down to 1.8 seconds. With some less samples and a denoiser we would get close to real-time rendering.
 
