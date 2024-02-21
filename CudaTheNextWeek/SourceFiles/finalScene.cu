@@ -7,11 +7,11 @@
 // the actual number of objects in the world.
 // For example, a box is made of 6 hittables
 // A correct number of objects would be :
-// 1 bvh node of 256 boxes => 256 * 6 = 1536
+// 1 bvh node of 16 boxes => 16 * 6 = 96
 // 1 bvh node of 1024 spheres => 1024
-// 9 other objects => 9
-// Total = 2569
-#define NODE_COUNT 11
+// 7 other objects => 7
+// Total = 96 + 1024 + 7 = 1127
+#define NODE_COUNT 8
 
 /* Iterative ray color function
  * Recursive call would be:
@@ -33,7 +33,7 @@ __device__ color rayColor(const ray& r, const color& background, hittable **worl
     color curEmitted(0.0f, 0.0f, 0.0f);
     hit_record rec;
 
-    for (int i = 0; i < 50; i ++) {
+    for (int i = 0; i < 20; i ++) {
         if ((*world)->hit(curRay, interval(0.001, INF), rec)) {
             ray scattered;
             color attenuation;
@@ -80,7 +80,7 @@ __global__ void render(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hitta
     int pixelIndex = j * maxX + i;
     curandState localRandState = randState[pixelIndex];
     color pixelColor(0.0f, 0.0f, 0.0f);
-    color background(0.0f, 0.0f, 0.0f);
+    color background(0.05f, 0.05f, 0.05f);
     for (int s = 0; s < ns; s ++) {
         float u = float(i + curand_uniform(&localRandState)) / float(maxX);
         float v = float(j + curand_uniform(&localRandState)) / float(maxY);
@@ -98,16 +98,16 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         lambertian *ground = new lambertian(color(0.48f, 0.83f, 0.53f));
 
-        int boxes_per_side = 16;
+        int boxes_per_side = 4;
 
         hittable **boxes = new hittable*[boxes_per_side * boxes_per_side];
         int cnt = 0;
 
         for (int i = 0; i < boxes_per_side; i ++) {
             for (int j = 0; j < boxes_per_side; j ++) {
-                float w = 100.0f;
-                float x0 = -1000.0f + i * w;
-                float z0 = -1000.0f + j * w;
+                float w = 200.0f;
+                float x0 = i * w;
+                float z0 = j * w;
                 float y0 = 0.0f;
                 float x1 = x0 + w;
                 float y1 = randomFloat(randState, 1.0f, 101.0f);
@@ -133,31 +133,23 @@ __global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_
 
         *(d_list + 2) = new sphere(center1, center2, 50.0f, new lambertian(color(0.7f, 0.3f, 0.1f)));
         *(d_list + 3) = new sphere(vec3(260.0f, 150.0f, 45.0f), 50.0f, new dielectric(1.5f));
-        *(d_list + 4) = new sphere(vec3(0.0f, 150.0f, 145.0f), 50.0f, new metal(color(0.8f, 0.8f, 0.9f), 10.0f));
+        *(d_list + 4) = new sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new metal(color(0.8f, 0.8f, 0.9f), 10.0f));
 
-        sphere *boundary = new sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new dielectric(1.5f));
-        *(d_list + 5) = boundary;
-        *(d_list + 6) = new constant_medium(boundary, 0.2f, color(0.2f, 0.4f, 0.9f), randState);
-        boundary = new sphere(vec3(0.0f, 0.0f, 0.0f), 5000.0f, new lambertian(color(0.2f, 0.4f, 0.9f)));
-        *(d_list + 7) = new constant_medium(boundary, 0.0001f, color(1.0f, 1.0f, 1.0f), randState);
+        *(d_list + 5) = new sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new metal(color(0.3f, 0.8f, 0.2f), 0.2f));
 
         noise_texture *pertext = new noise_texture(randState, 0.1f);
-        *(d_list + 8) = new sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
-
-        pertext = new noise_texture(randState, 4.0f);
-        *(d_list + 9) = new sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new lambertian(pertext));
-
+        *(d_list + 6) = new sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
 
         hittable **spheres = new hittable*[1024];
-        lambertian *white = new lambertian(color(0.73f, 0.73f, 0.73f));
+        lambertian *blue = new lambertian(color(0.2f, 0.2f, 0.7f));
         for (int i = 0; i < 1024; i ++) {
-            spheres[i] = new sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, white);
+            spheres[i] = new sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, blue);
         }
 
         if (useBVH) {
-             *(d_list + 10) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+             *(d_list + 7) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
          } else {
-             *(d_list + 10) = new translate(new rotate_y(new hittable_list(spheres, 1024), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+             *(d_list + 7) = new translate(new rotate_y(new hittable_list(spheres, 1024), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
         }
 
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
@@ -193,12 +185,16 @@ int main(int argc, char **argv) {
     bool useBVH = atoi(argv[1]);
     int nx = 900;
     int ny = 600;
-    int ns = 10;
+    int ns = 5;
 
     int num_pixels = nx * ny;
 
     color *fb_gpu;
     cudaError_t cudaStatus;
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
     // create device frame buffer
     cudaStatus = cudaMalloc((void**)&fb_gpu, num_pixels * sizeof(color));
@@ -245,10 +241,17 @@ int main(int argc, char **argv) {
 
     checkReturn(cudaDeviceSynchronize());
 
+    cudaEventRecord(start);
     render<<<blockCount, blockSize>>>(fb_gpu, nx, ny, ns, d_cam, d_world, d_randState);
+    cudaEventRecord(stop);
 
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
+
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cerr << "Time: " << milliseconds << "ms\n";
 
     color *fb_cpu = (color*)malloc(num_pixels * sizeof(color));
     cudaStatus = cudaMemcpy(fb_cpu, fb_gpu, num_pixels * sizeof(color), cudaMemcpyDeviceToHost);
