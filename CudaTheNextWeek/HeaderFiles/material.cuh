@@ -43,7 +43,7 @@ class lambertian : public material {
 
 class metal : public material {
     public:
-        __device__ metal(const color& a, float f) : albedo(a), fuzz(f) {}
+        __device__ metal(const color& a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
 
         __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState *localRandState) const override {
             vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
@@ -56,7 +56,6 @@ class metal : public material {
         color albedo;
         float fuzz;
 };
-
 
 class dielectric : public material {
     public:

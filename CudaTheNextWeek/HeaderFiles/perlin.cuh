@@ -12,7 +12,7 @@ class perlin {
         __device__ perlin(curandState *localRandState) {
             ranvec = new vec3[perlin::point_count];
             for (int i = 0; i < perlin::point_count; ++i) {
-                ranvec[i] = randomUnitVector(localRandState);
+                ranvec[i] = unit_vector(randomVectorBetween(localRandState, -1, 1));
             }
             perm_x = perlin_generate_perm(localRandState);
             perm_y = perlin_generate_perm(localRandState);
@@ -26,22 +26,6 @@ class perlin {
             delete[] perm_z;
         }
 
-
-        __device__ float turb(const point3& p, int depth = 7) const {
-            float accum = 0.0f;
-            point3 temp_p = p;
-            float weight = 1.0f;
-
-            for (int i = 0; i < depth; ++i) {
-                accum += weight * noise(temp_p);
-                weight *= 0.5f;
-                temp_p *= 2;
-            }
-
-            return fabs(accum);
-        }
-
-    private:
         __device__ float noise(const point3& p) const {
             float u = p.x() - floor(p.x());
             float v = p.y() - floor(p.y());
@@ -66,7 +50,20 @@ class perlin {
             }
 
             return perlin_interp(c, u, v, w);
+        }
 
+        __device__ float turb(const point3& p, int depth = 7) const {
+            float accum = 0.0f;
+            point3 temp_p = p;
+            float weight = 1.0f;
+
+            for (int i = 0; i < depth; ++i) {
+                accum += weight * noise(temp_p);
+                weight *= 0.5f;
+                temp_p *= 2;
+            }
+
+            return fabs(accum);
         }
 
         __device__ static int* perlin_generate_perm(curandState *localRandState) {
@@ -85,7 +82,8 @@ class perlin {
 
             return p;
         }
-
+        
+    private:
         __device__ static float perlin_interp(vec3 c[2][2][2], float u, float v, float w) {
             // Hermitian smoothing
             float uu = u * u * (3 - 2 * u);
@@ -108,7 +106,6 @@ class perlin {
             return accum;
         }
 
-    private:
         static const int point_count = 256;
         vec3 *ranvec;
         int *perm_x;

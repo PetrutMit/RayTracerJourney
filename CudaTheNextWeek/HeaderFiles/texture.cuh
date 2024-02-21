@@ -14,7 +14,7 @@ class constant_texture : public my_texture {
         __device__ constant_texture() {}
         __device__ constant_texture(vec3 c) : color_value(c) {}
 
-        __device__ virtual vec3 value(float u, float v, const vec3& p) const override {
+        __device__ vec3 value(float u, float v, const vec3& p) const override {
             return color_value;
         }
 
@@ -27,7 +27,7 @@ class checker_texture : public my_texture {
         __device__ checker_texture() {}
         __device__ checker_texture(my_texture* t0, my_texture* t1) : even(t0), odd(t1) {}
 
-        __device__ virtual vec3 value(float u, float v, const vec3& p) const override {
+        __device__  vec3 value(float u, float v, const vec3& p) const override {
             float sines = sin(10*p.x())*sin(10*p.y())*sin(10*p.z());
             if (sines < 0) {
                 return odd->value(u, v, p);
@@ -48,8 +48,9 @@ class noise_texture : public my_texture {
             noise = new perlin(rand_state);
         }
 
-        __device__ virtual color value(float u, float v, const point3& p) const override {
-            return color(1,1,1) * 0.5f * (1 + sin(scale*p.z() + 10*noise->turb(p)));
+        __device__ vec3 value(float u, float v, const point3& p) const override {
+            vec3 s = scale * p;
+            return vec3(1.0f, 1.0f, 1.0f) * 0.5f * (1.0f + sin(s.z()+ 10.0f*noise->turb(s)));
         }
 
     public:

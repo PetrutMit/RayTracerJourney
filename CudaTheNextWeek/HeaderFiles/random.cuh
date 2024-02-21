@@ -12,13 +12,16 @@ __device__ int randomInt(curandState *state, int min, int max) {
     return (int)randomFloat(state, min, max);
 }
 
+// Returns a random vector with each component between 0 and 1
 __device__ vec3 randomVector(curandState *localRandState) {
     float a = curand_uniform(localRandState);
     float b = curand_uniform(localRandState);
     float c = curand_uniform(localRandState);
-    return unit_vector(vec3(a,b,c));
+    //return unit_vector(vec3(a,b,c));
+    return vec3(a,b,c);
 }
 
+// Returns a random vector with each component between min and max
 __device__ vec3 randomVectorBetween(curandState *localRandState, float min, float max) {
     float a = randomFloat(localRandState, min, max);
     float b = randomFloat(localRandState, min, max);
@@ -26,6 +29,7 @@ __device__ vec3 randomVectorBetween(curandState *localRandState, float min, floa
     return vec3(a,b,c);
 }
 
+// Returns a random vector within the unit disk (z component is 0)
 __device__ vec3 randomInUnitDisk(curandState *state) {
     vec3 p;
     do {
@@ -34,6 +38,7 @@ __device__ vec3 randomInUnitDisk(curandState *state) {
     return p;
 }
 
+// Returns a random vector within the unit sphere
 __device__ vec3 randomInUnitSphere(curandState *localRandState) {
     vec3 p;
     do {
@@ -42,6 +47,7 @@ __device__ vec3 randomInUnitSphere(curandState *localRandState) {
     return p;
 }
 
+// Returns a random unit vector
 __device__ vec3 randomUnitVector(curandState *localRandState) {
     return unit_vector(randomInUnitSphere(localRandState));
 }

@@ -14,6 +14,8 @@
 > 9. ![Light](Images/light.jpg)
 > 10. ![Final Scene 1](Images/final_scene1.jpg)
 > 11. ![Final Scene 2](Images/final_scene3.jpg)
+> 12. ![Final Scene 3](Images/final_scene4.png)
+> 13. ![Final Scene 4](Images/final_scene5.jpg)
 
 > Steps taken to make our CUDA implementation:
 > 1. Starting from CUDA In One Weekend implementation and adding the new functionalities
