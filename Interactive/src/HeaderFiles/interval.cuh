@@ -28,6 +28,8 @@ class interval {
         }
 };
 
+#ifdef __CUDACC__
+
 __device__ interval operator+(const interval &a, float displacement) {
     return interval(a.min + displacement, a.max + displacement);
 }
@@ -35,5 +37,7 @@ __device__ interval operator+(const interval &a, float displacement) {
 __device__ interval operator+(float displacement, const interval &a) {
     return a + displacement;
 }
+
+#endif
 
 #endif

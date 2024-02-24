@@ -5,9 +5,12 @@
 
 #include "HeaderFiles/render.cuh"
 
+#include <glm/packing.hpp>
+
+
 #define NODE_COUNT 8
 
-__device__ color Render::rayColor(const ray& r, const color& background, hittable **world, curandState *localRandState) {
+__device__ color rayColor(const ray& r, const color& background, hittable **world, curandState *localRandState) {
     ray curRay = r;
 
     color curAttenuation(1.0f, 1.0f, 1.0f);
@@ -34,7 +37,7 @@ __device__ color Render::rayColor(const ray& r, const color& background, hittabl
    return color(0.0f, 0.0f, 0.0f);
 }
 
-__global__ void Render::renderInit(int maxX, int maxY, curandState *randStatePixels, curandState *randStateWorld) {
+__global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, curandState *randStateWorld) {
     // Also initialize here the random state for world construction
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         curand_init(1984, 0, 0, randStateWorld);
@@ -52,7 +55,7 @@ __global__ void Render::renderInit(int maxX, int maxY, curandState *randStatePix
     curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
-__global__ void Render::raytrace(vec3 *fb, int maxX, int maxY, int ns, camera **cam, hittable **world, curandState *randState) {
+__global__ void raytrace(uint32_t *fb, int maxX, int maxY, int ns, camera **cam, hittable **world, curandState *randState) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -72,10 +75,10 @@ __global__ void Render::raytrace(vec3 *fb, int maxX, int maxY, int ns, camera **
 
     getColor(pixelColor, ns);
 
-    fb[pixelIndex] = pixelColor;
+    fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.x(), pixelColor.y(), pixelColor.z(), 1.0f));
 }
 
-__global__ void Render::allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState) {
+__global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         lambertian *ground = new lambertian(color(0.48f, 0.83f, 0.53f));
 
@@ -98,11 +101,7 @@ __global__ void Render::allocateWorld(hittable **d_list, hittable **d_world, cam
             }
         }
 
-        if (useBVH) {
-            *(d_list) = new bvh_node(boxes, cnt, randState);
-        } else {
-            *(d_list) = new hittable_list(boxes, cnt);
-        }
+        *(d_list) = new bvh_node(boxes, cnt, randState);
 
         diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
         quad *light_shape = new quad(vec3(123.0f, 554.0f, 147.0f), vec3(300.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 265.0f), light);
@@ -127,11 +126,7 @@ __global__ void Render::allocateWorld(hittable **d_list, hittable **d_world, cam
             spheres[i] = new sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, blue);
         }
 
-        if (useBVH) {
-             *(d_list + 7) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
-         } else {
-             *(d_list + 7) = new translate(new rotate_y(new hittable_list(spheres, 1024), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
-        }
+        *(d_list + 7) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
 
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
@@ -146,7 +141,7 @@ __global__ void Render::allocateWorld(hittable **d_list, hittable **d_world, cam
     }
 }
 
-__global__ void Render::freeWorld(hittable **d_list, hittable **d_world, camera **d_cam) {
+__global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         for (int i = 0; i < NODE_COUNT; i++) {
             delete *(d_list + i);
@@ -156,23 +151,24 @@ __global__ void Render::freeWorld(hittable **d_list, hittable **d_world, camera 
     }
 }
 
-Render::Render(GLuint nx, GLuint ny, cudaGraphicsResource_t cuda_pbo_resource) {
+
+Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     _nx = nx;
     _ny = ny;
     _cuda_pbo_resource = cuda_pbo_resource;
 
-    GLint num_pixels = _nx * _ny;
+    int num_pixels = _nx * _ny;
 
     cudaError_t cudaStatus;
 
     // create random state for each pixel
-    curandState *d_randState;
-    cudaStatus = cudaMalloc((void**)&d_randState, num_pixels * sizeof(curandState));
+    curandState *d_randStatePixels;
+    cudaStatus = cudaMalloc((void**)&d_randStatePixels, num_pixels * sizeof(curandState));
     checkReturn(cudaStatus);
 
     // create random state for world construction
-    curandState *d_worldRandState;
-    cudaStatus = cudaMalloc((void**)&d_worldRandState, sizeof(curandState));
+    curandState *d_randStateWorld;
+    cudaStatus = cudaMalloc((void**)&d_randStateWorld, sizeof(curandState));
     checkReturn(cudaStatus);
 
     // create world of hittable objects
@@ -189,37 +185,44 @@ Render::Render(GLuint nx, GLuint ny, cudaGraphicsResource_t cuda_pbo_resource) {
     cudaStatus = cudaMalloc((void**)&d_cam, sizeof(camera*));
     checkReturn(cudaStatus);
 
+    // Even though we have an iterative approach, we still need a bigger stack
+    size_t size;
+    cudaDeviceGetLimit(&size, cudaLimitStackSize);
+    cudaDeviceSetLimit(cudaLimitStackSize, 2 * size);
+
     dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
     dim3 blockSize(TX, TY);
 
-    renderInit<<<blockCount, blockSize>>>(_nx, _ny, d_randState, d_worldRandState);
+    renderInit<<<blockCount, blockSize>>>(_nx, _ny, d_randStatePixels, d_randStateWorld);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
-    allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_worldRandState);
+    allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_randStateWorld);
     checkReturn(cudaGetLastError());
 
     _d_cam = d_cam;
     _d_world = d_world;
-    _d_randStatePixels = d_randState;
-
-    cudaFree(d_worldRandState);
-    cudaFree(d_list);
+    _d_randStatePixels = d_randStatePixels;
 }
 
 __host__ void Render::render() {
     dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
     dim3 blockSize(TX, TY);
-    GLuint ns = 5;
+    int ns = 5;
 
     // Get the pointer to the frame buffer
-    vec3 *fb;
+    uint32_t *fb;
     size_t size;
     cudaError_t cudaStatus;
-    
-    cudaStatus = cudaGraphicsResourceGetMappedPointer((void**)&fb, &size, _cuda_pbo_resource);
+
+    // Map the resource
+    cudaStatus = cudaGraphicsMapResources(1, &_cuda_pbo_resource);
     checkReturn(cudaStatus);
     
+    // Get the pointer to the frame buffer
+    cudaStatus = cudaGraphicsResourceGetMappedPointer((void**)&fb, &size, _cuda_pbo_resource);
+    checkReturn(cudaStatus);
+
     raytrace<<<blockCount, blockSize>>>(fb, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
@@ -230,15 +233,4 @@ __host__ void Render::render() {
 }
 
 __host__ void Render::free() {
-    cudaError_t cudaStatus;
-
-    // free world of hittable objects
-    freeWorld<<<1, 1>>(_d_list, _d_world, _d_cam);
-    checkReturn(cudaGetLastError());
-
-    cudaStatus = cudaFree(_d_list);
-    checkReturn(cudaStatus);
-
-    cudaStatus = cudaFree(_d_world);
-    checkReturn(cudaStatus);
 }

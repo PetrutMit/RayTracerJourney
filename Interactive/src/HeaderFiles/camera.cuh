@@ -1,8 +1,10 @@
 #ifndef CAMERA_CUH
 #define CAMERA_CUH
 
+
 #include "ray.cuh"
 #include "random.cuh"
+
 #define PI 3.141592653589793f
 
 class camera {
@@ -36,7 +38,7 @@ class camera {
             time0 = _time0;
             time1 = _time1;
         }
-
+        #ifdef __CUDACC__
         __device__ ray get_ray(float s, float t, curandState *state) const {
             vec3 rd = lens_radius * randomInUnitDisk(state);
             vec3 offset = u * rd.x() + v * rd.y();
@@ -47,6 +49,7 @@ class camera {
                 randomFloat(state, time0, time1)
             );
         }
+        #endif
 
     private:
         point3 origin;

@@ -4,6 +4,9 @@
 #include "vec3.cuh"
 #include "curand_kernel.h"
 
+// Avoid LNK2005 error
+#ifdef __CUDACC__
+
 __device__ float randomFloat(curandState *state, float min, float max) {
     return min + (max - min) * curand_uniform(state);
 }
@@ -60,5 +63,7 @@ __device__ vec3 randomInHemiSphere(const vec3& normal, curandState *localRandSta
         return -inUnitSphere;
     }
 }
+
+#endif
 
 #endif

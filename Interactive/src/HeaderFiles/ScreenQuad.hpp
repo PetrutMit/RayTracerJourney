@@ -1,13 +1,16 @@
+#ifndef SCREEN_QUAD_HPP
+#define SCREEN_QUAD_HPP
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
 
-#include "Render.hpp"
+#include "Render.cuh"
 
-class Quad {
+class ScreenQuad {
 
     public:
-        Quad(int width, int height) : _width(width), _height(height) {
+        ScreenQuad(int width, int height) : _width(width), _height(height) {
             // Geometry initialization
             GLfloat vertices[] = {
                 // positions          // texture coords
@@ -55,7 +58,7 @@ class Quad {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
             glBindTexture(GL_TEXTURE_2D, 0);
 
             // PBO initialization
@@ -64,30 +67,53 @@ class Quad {
             glBufferData(GL_PIXEL_UNPACK_BUFFER, _width * _height * 4, NULL, GL_DYNAMIC_COPY);
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-            // CUDA-OpenGL interop initialization
-            cudaGraphicsGLRegisterBuffer(&_cuda_resource, _PBO, cudaGraphicsRegisterFlagsNone);
+            // CUDA-OpenGL interop 
+            cudaError_t err = cudaGraphicsGLRegisterBuffer(&_cuda_resource, _PBO, cudaGraphicsRegisterFlagsNone);
+            if (err != cudaSuccess) {
+				std::cerr << "Error registering PBO with CUDA: " << cudaGetErrorString(err) << std::endl;
+			}
 
             // Render initialization
             _render = new Render(_width, _height, _cuda_resource);
+
+            render_cuda_texture();
         }
 
-        ~Quad() {
+        ~ScreenQuad() {
         }
 
-        void render() {
-            // Unbind
+        void render_cuda_texture() {
+            // Unbind ?
             glBindTexture(GL_TEXTURE_2D, 0);
+
             _render->render();
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _PBO);
             glBindTexture(GL_TEXTURE_2D, _texture);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
         }
 
+        void render_to_screen() {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDisable(GL_DEPTH_TEST);
+
+            glClear(GL_COLOR_BUFFER_BIT);
+
+			glBindVertexArray(_vao);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // maybe go with drawArrays
+		}
+
+		GLuint get_texture() {
+			return _texture;
+		}
+
     private:
         GLuint _vao, _vbo, _ibo;
         GLuint _texture;
         GLuint _PBO;
-        cudaGraphicsResource _cuda_resource;
+        cudaGraphicsResource_t _cuda_resource;
         int _width, _height;
         Render *_render;
-}
+};
+
+#endif
