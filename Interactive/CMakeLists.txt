@@ -7,15 +7,14 @@ set(CMAKE_CXX_STANDARD 17)
 # Add Static Libraries
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
-# Add Source Files for RT
-file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/RT/render.cu)
-# And for Window Drawing
-file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/Window/main.cpp)
+# Add Source Files
+file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp ${CMAKE_SOURCE_DIR}/src/render.cu)
 
-# Add Header File for RT
-file(GLOB_RECURSE HEADERS ${CMAKE_SOURCE_DIR}/src/RT/HeaderFiles/*.cuh)
-# And for Window Drawing
-file(GLOB_RECURSE HEADERS ${CMAKE_SOURCE_DIR}/src/Window/HeaderFiles/*.hpp)
+# Add Header Files
+file(GLOB_RECURSE HEADERS ${CMAKE_SOURCE_DIR}/src/HeaderFiles/*.cuh ${CMAKE_SOURCE_DIR}/src/HeaderFiles/*.hpp)
+
+# Copy Shaders to build directory
+file(COPY ${CMAKE_SOURCE_DIR}/src/Shaders DESTINATION .)
 
 # Define the executable
 add_executable(RealTimeRTX ${SOURCES} ${HEADERS})
@@ -29,9 +28,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 ################################
 # Packages
 ################################
-
-# Find CUDA - DEPRECATED
-#find_package(CUDA REQUIRED)
 
 # Find OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
@@ -62,7 +58,8 @@ include_directories(
 # Define the libraries to link
 target_link_libraries(RealTimeRTX ${LIBS})
 
-# Create virtual folder structure for VS
+include(CMakePrintHelpers)
+
 if(MSVC_IDE)
 	# Macro to preserve source files hierarchy in the IDE
 	macro(GroupSources curdir)
@@ -75,11 +72,27 @@ if(MSVC_IDE)
 				string(REPLACE "/" "\\" groupname ${curdir})
 				string(REPLACE "src" "Sources" groupname ${groupname})
 				source_group(${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+				cmake_print_variables(groupname)
 			endif()
 		endforeach()
 	endmacro()
 
 	# Run macro
 	GroupSources(src)
+
 endif()
+
+
+function(CUDA_CONVERT_FLAGS EXISTING_TARGET)
+	get_property(old_flags TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS)
+	if(NOT "${old_flags}" STREQUAL "")
+		string(REPLACE ";" "," CUDA_flags "${old_flags}")
+		set_property(TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS
+			"$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CXX>>:${old_flags}>$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CUDA>>:-Xcompiler=${CUDA_flags}>"
+			)
+	endif()
+endfunction()
+
+CUDA_CONVERT_FLAGS(${PROJECT_NAME})
+
 
