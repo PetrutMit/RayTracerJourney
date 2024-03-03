@@ -28,7 +28,7 @@ class hittable_list : public hittable {
     private:
         aabb _bbox;
 };
-
+#ifdef __CUDACC__
 __device__ bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec) const {
     hit_record temp_rec;
     bool hit_anything = false;
@@ -45,23 +45,6 @@ __device__ bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec
 
     return hit_anything;
 }
-
-//__device__ bool hittable_list::bounding_box() const {
-    // if (list_size == 0) return false;
-
-    // aabb temp_box;
-    // bool first_box = true;
-
-    // // Loop through all objects in the list and find the bounding box
-    // for (int i = 0; i < list_size; i++) {
-    //     if (!list[i]->bounding_box(t0, t1, temp_box)) return false;
-    //     box = first_box ? temp_box : surrounding_box(box, temp_box);
-    //     first_box = false;
-    // }
-
-    // return true;
-
-//    return _bbox;
-//}
+#endif
 
 #endif

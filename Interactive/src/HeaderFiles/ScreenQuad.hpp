@@ -75,31 +75,33 @@ class ScreenQuad {
 
             // Render initialization
             _render = new Render(_width, _height, _cuda_resource);
-
-            render_cuda_texture();
         }
 
         ~ScreenQuad() {
+            delete(_render);
+            glDeleteVertexArrays(1, &_vao);
+            glDeleteBuffers(1, &_vbo);
+            glDeleteBuffers(1, &_ibo);
+            glDeleteTextures(1, &_texture);
+            glDeleteBuffers(1, &_PBO);
         }
 
-        void render_cuda_texture() {
-            // Unbind ?
+        void render_cuda_texture(GLfloat deltaTime) {
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            _render->render();
+            _render->render(deltaTime);
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _PBO);
             glBindTexture(GL_TEXTURE_2D, _texture);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
         }
 
+
         void render_to_screen() {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glDisable(GL_DEPTH_TEST);
-
             glClear(GL_COLOR_BUFFER_BIT);
 
 			glBindVertexArray(_vao);
-
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // maybe go with drawArrays
 		}
 

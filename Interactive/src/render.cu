@@ -8,16 +8,16 @@
 #include <glm/packing.hpp>
 
 
-#define NODE_COUNT 8
+#define NODE_COUNT 6
 
-__device__ color rayColor(const ray& r, const color& background, hittable **world, curandState *localRandState) {
+__device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState) {
     ray curRay = r;
 
     color curAttenuation(1.0f, 1.0f, 1.0f);
     color curEmitted(0.0f, 0.0f, 0.0f);
     hit_record rec;
 
-    for (int i = 0; i < 20; i ++) {
+    for (int i = 0; i < 50; i ++) {
         if ((*world)->hit(curRay, interval(0.001, INF), rec)) {
             ray scattered;
             color attenuation;
@@ -55,16 +55,21 @@ __global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, cur
     curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
-__global__ void raytrace(uint32_t *fb, int maxX, int maxY, int ns, camera **cam, hittable **world, curandState *randState) {
+__global__ void raytrace(uint32_t *fb, int maxX, int maxY, int ns, camera **cam, hittable_list **world, curandState *randState, float deltaTime) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
     if ((i >= maxX) || (j >= maxY)) return;
 
+    // Adjust our camera view
+    if (i == 0 && j == 0) {
+        (*cam)->adjust_parameters(deltaTime);
+    }
+
     int pixelIndex = j * maxX + i;
     curandState localRandState = randState[pixelIndex];
     color pixelColor(0.0f, 0.0f, 0.0f);
-    color background(0.05f, 0.05f, 0.05f);
+    color background(0.2f, 0.2f, 0.2f);
     for (int s = 0; s < ns; s ++) {
         float u = float(i + curand_uniform(&localRandState)) / float(maxX);
         float v = float(j + curand_uniform(&localRandState)) / float(maxY);
@@ -75,73 +80,101 @@ __global__ void raytrace(uint32_t *fb, int maxX, int maxY, int ns, camera **cam,
 
     getColor(pixelColor, ns);
 
-    fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.x(), pixelColor.y(), pixelColor.z(), 1.0f));
+    fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.z(), pixelColor.y(), pixelColor.x(), 1.0f));
 }
 
-__global__ void allocateWorld(hittable **d_list, hittable **d_world, camera **d_cam, curandState *randState) {
+__global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera **d_cam, curandState *randState) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        lambertian *ground = new lambertian(color(0.48f, 0.83f, 0.53f));
 
-        int boxes_per_side = 4;
+        lambertian *ground = new lambertian(color(0.83f, 0.83f, 0.13f));
+        *(d_list) = new sphere(vec3(0.0f, -2000.0f, 0.0f), 2000.0f, ground);
 
-        hittable **boxes = new hittable*[boxes_per_side * boxes_per_side];
-        int cnt = 0;
+        diffuse_light *light = new diffuse_light(color(3.0f, 3.0f, 3.0f));
+        //material *light = new lambertian(color(0.7f, 0.7f, 0.7f));
+        sphere *moon = new sphere(vec3(-550.0f, 350.0f, 550.0f), 50.0f, light);
+        *(d_list + 1) = moon; 
 
-        for (int i = 0; i < boxes_per_side; i ++) {
-            for (int j = 0; j < boxes_per_side; j ++) {
-                float w = 200.0f;
-                float x0 = i * w;
-                float z0 = j * w;
-                float y0 = 0.0f;
-                float x1 = x0 + w;
-                float y1 = randomFloat(randState, 1.0f, 101.0f);
-                float z1 = z0 + w;
+        *(d_list + 2) = new sphere(vec3(-80.0f, 20.0f, -300.0f), 40.0f, new metal(color(0.1f, 0.9f, 0.1f), 0.1f));
 
-                boxes[cnt ++] = box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
+        hittable **spheres = new hittable*[64];
+        lambertian *red = new lambertian(color(0.9f, 0.2f, 0.1f));
+        for (int i = 0; i < 64; i ++) {
+            spheres[i] = new sphere(vec3(randomVectorBetween(randState, -50.0f, 0.0f) + vec3(50.0f, 30.0f, -300.0f)), 7.0f, red);
+        }
+
+        *(d_list + 3) = new bvh_node(spheres, 64, randState);
+
+        // Create some random height boxes
+        hittable **boxes = new hittable*[4];
+
+        float width = 20.0f;
+        int choice;
+        float x0, z0, x1, z1, y0, y1;
+        material *mat;
+        for (int i = 0; i < 4; i ++) {
+            x0 = 80.0f + i * width;
+            z0 = -300.0f;
+
+            x1 = x0 + width;
+            z1 = -300.0f + width;
+    
+            y0 = -30.0f;
+            y1 = randomFloat(randState, 1.0f, 100.0f);
+            
+            choice = randomInt(randState, 0, 2);
+            printf("choice: %d\n", choice);
+            switch (choice)
+            {
+            case 0:
+                mat = new lambertian(randomVector(randState));
+                break;
+            case 1:
+                mat = new metal(randomVector(randState), randomFloat(randState, 0.0f, 0.3f));
+                break;
             }
-        }
+            boxes[i] = box(vec3(x0, y0, z0), vec3(x1, y1, z1), mat);
+		}
 
-        *(d_list) = new bvh_node(boxes, cnt, randState);
+        *(d_list + 4) = new bvh_node(boxes, 4, randState);
 
-        diffuse_light *light = new diffuse_light(color(7.0f, 7.0f, 7.0f));
-        quad *light_shape = new quad(vec3(123.0f, 554.0f, 147.0f), vec3(300.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 265.0f), light);
+        // Create random spheres on the ground
+        hittable **ground_spheres = new hittable*[64];
+        int cnt = 0;
+        float chooseMat;
+        float randomRadius;
 
-        *(d_list + 1) = light_shape;
+        for (float i = -400.0f; i < 400.0f; i += 100.0f) {
+			for (int j = -400.0f; j < 400.0f; j += 100.0f) {
+				chooseMat = curand_uniform(randState);
+                randomRadius = randomFloat(randState, 3.0f, 10.0f);
 
-        vec3 center1 = vec3(400.0f, 400.0f, 200.0f);
-        vec3 center2 = center1 + vec3(30.0f, 0.0f, 0.0f);
+				vec3 center(i + 100.0f * curand_uniform(randState), 0.0f, j + 100.0f * curand_uniform(randState));
+			    if (chooseMat < 0.8f) {
+                    ground_spheres[cnt++] = new sphere(center, randomRadius, new lambertian(randomVector(randState)));
+			    } else if (chooseMat < 0.95f) {
+				    ground_spheres[cnt++] = new sphere(center, randomRadius, new metal(randomVector(randState), randomFloat(randState, 0.0f, 0.5f)));
+			    } else {
+				    ground_spheres[cnt++] = new sphere(center, randomRadius, new dielectric(1.5f));
+			    }
+			}
+		}
 
-        *(d_list + 2) = new sphere(center1, center2, 50.0f, new lambertian(color(0.7f, 0.3f, 0.1f)));
-        *(d_list + 3) = new sphere(vec3(260.0f, 150.0f, 45.0f), 50.0f, new dielectric(1.5f));
-        *(d_list + 4) = new sphere(vec3(400.0f, 200.0f, 400.0f), 100.0f, new metal(color(0.8f, 0.8f, 0.9f), 10.0f));
-
-        *(d_list + 5) = new sphere(vec3(360.0f, 150.0f, 145.0f), 70.0f, new metal(color(0.3f, 0.8f, 0.2f), 0.2f));
-
-        noise_texture *pertext = new noise_texture(randState, 0.1f);
-        *(d_list + 6) = new sphere(vec3(220.0f, 280.0f, 300.0f), 80.0f, new lambertian(pertext));
-
-        hittable **spheres = new hittable*[1024];
-        lambertian *blue = new lambertian(color(0.2f, 0.2f, 0.7f));
-        for (int i = 0; i < 1024; i ++) {
-            spheres[i] = new sphere(vec3(randomVectorBetween(randState, 0.0f, 165.0f)), 10.0f, blue);
-        }
-
-        *(d_list + 7) = new translate(new rotate_y(new bvh_node(spheres, 1024, randState), 15.0f), vec3(-100.0f, 270.0f, 395.0f));
+        *(d_list + 5) = new bvh_node(ground_spheres, 64, randState);
 
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
-        vec3 lookFrom(478.0f, 278.0f, -600.0f);
-        vec3 lookAt(278.0f, 278.0f, 0.0f);
+        vec3 lookFrom(0.0f, 0.0f, -600.0f);
+        vec3 lookAt(0.0f, 0.0f, 0.0f);
         float distToFocus = 10.0f;
         float aperture = 0.0f;
         float aspect_ratio = 3.0f / 2.0f;
         float vfov = 40.0f;
 
-        *(d_cam) = new camera(lookFrom, lookAt, vec3(0.0f, 1.0f, 0.0f), vfov, aspect_ratio, aperture, distToFocus, 0.0f, 1.0f);
+        *(d_cam) = new camera(lookFrom, lookAt, vec3(0.0f, 1.0f, 0.0f), vfov, aspect_ratio, aperture, distToFocus);
     }
 }
 
-__global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam) {
+__global__ void freeWorld(hittable **d_list, hittable_list **d_world, camera **d_cam) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         for (int i = 0; i < NODE_COUNT; i++) {
             delete *(d_list + i);
@@ -155,7 +188,6 @@ __global__ void freeWorld(hittable **d_list, hittable **d_world, camera **d_cam)
 Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     _nx = nx;
     _ny = ny;
-    _cuda_pbo_resource = cuda_pbo_resource;
 
     int num_pixels = _nx * _ny;
 
@@ -176,8 +208,8 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     cudaStatus = cudaMalloc((void**)&d_list, NODE_COUNT * sizeof(hittable*));
     checkReturn(cudaStatus);
 
-    hittable **d_world;
-    cudaStatus = cudaMalloc((void**)&d_world, sizeof(hittable*));
+    hittable_list **d_world;
+    cudaStatus = cudaMalloc((void**)&d_world, sizeof(hittable_list*));
     checkReturn(cudaStatus);
 
     // create camera
@@ -200,37 +232,36 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_randStateWorld);
     checkReturn(cudaGetLastError());
 
+    // Free random state for world construction
+    cudaFree(d_randStateWorld);
+
     _d_cam = d_cam;
     _d_world = d_world;
     _d_randStatePixels = d_randStatePixels;
-}
 
-__host__ void Render::render() {
-    dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
-    dim3 blockSize(TX, TY);
-    int ns = 5;
-
-    // Get the pointer to the frame buffer
-    uint32_t *fb;
-    size_t size;
-    cudaError_t cudaStatus;
-
-    // Map the resource
+    _cuda_pbo_resource = cuda_pbo_resource;
     cudaStatus = cudaGraphicsMapResources(1, &_cuda_pbo_resource);
     checkReturn(cudaStatus);
-    
-    // Get the pointer to the frame buffer
-    cudaStatus = cudaGraphicsResourceGetMappedPointer((void**)&fb, &size, _cuda_pbo_resource);
-    checkReturn(cudaStatus);
 
-    raytrace<<<blockCount, blockSize>>>(fb, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels);
+    cudaStatus = cudaGraphicsResourceGetMappedPointer((void**)&_d_output, NULL, _cuda_pbo_resource);
+    checkReturn(cudaStatus);
+}
+
+__host__ void Render::render(float deltaTime) {
+    dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
+    dim3 blockSize(TX, TY);
+    int ns = 2;
+
+    raytrace<<<blockCount, blockSize>>>(_d_output, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels, deltaTime);
+    checkReturn(cudaGetLastError());
+    checkReturn(cudaDeviceSynchronize());
+}
+
+Render::~Render() {
+    freeWorld<<<1, 1>>>((*_d_world)->list, _d_world, _d_cam);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
-    // Unmap the resource
-    cudaStatus = cudaGraphicsUnmapResources(1, &_cuda_pbo_resource);
-    checkReturn(cudaStatus);
-}
-
-__host__ void Render::free() {
+    cudaFree(_d_randStatePixels);
+    checkReturn(cudaGraphicsUnmapResources(1, &_cuda_pbo_resource));
 }

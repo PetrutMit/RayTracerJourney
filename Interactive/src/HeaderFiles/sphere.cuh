@@ -18,7 +18,7 @@ class sphere : public hittable {
             _bbox = aabb(_center0 - radius3, _center0 + radius3);
         }
 
-        // Call to modelate a moving sphere
+        // Call to modelate a moving sphere -> Should be removed
         __device__ sphere(point3 cen0, point3 cen1, float r, material *m): _center0(cen0), _radius(r), _mat_ptr(m), _is_moving(true) {
             vec3 radius3(r, r, r);
             aabb box0(cen0 - radius3, cen0 + radius3);

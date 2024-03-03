@@ -10,7 +10,7 @@
 class Window {
 
     public:
-        Window(int width, int height) : _width(width), _height(height) {
+        Window(int width, int height) : _width(width), _height(height), _last_frame(glfwGetTime()) {
             if (!glfwInit()) {
                 throw "Failed to initialize GLFW";
             }
@@ -36,22 +36,33 @@ class Window {
 
             _quad = new ScreenQuad(_width, _height);
 
-            _shader = new Shader("./Shaders/vertex.glsl", "./Shaders/fragment.glsl");
+
+            _shader_render = new Shader("./Shaders/render_pass_vertex.glsl",
+                    					"./Shaders/render_pass_frag.glsl");
         }
 
         ~Window() {
             glfwTerminate();
+            delete(_quad);
+            delete(_shader_accumulate);
+            delete(_shader_render);
         }
 
-        void update() const {
-            // Render the textured quad
-            _shader->use();
-            // Activate the texture
-            GLuint texture = _quad->get_texture();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glUniform1i(glGetUniformLocation(_shader->ID, "screenTexture"), 0);
+        void update() {
+            // Compute Delta Time
+            GLfloat current_frame = glfwGetTime();
+            GLfloat delta_time = current_frame - _last_frame;
+            _last_frame = current_frame;
 
+            printf("FPS : %f\n", 1.0f / delta_time);
+
+            // Render the CUDA texture
+            _quad->render_cuda_texture(delta_time);
+            
+            _shader_render->use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, _quad->get_texture());
+            glUniform1i(glGetUniformLocation(_shader_render->ID, "accumulatedTexture"), 0);
             _quad->render_to_screen();
 
             // Draw Call
@@ -65,22 +76,24 @@ class Window {
             }
         }
 
-        void loop() const {
-            while (!glfwWindowShouldClose(_window)) {
+        void loop() {
+           while (!glfwWindowShouldClose(_window)) {
                 process_input();
                 update();
             }
         }
 
-
-
     private:
+        // Window
         GLFWwindow* _window;
         int _width;
         int _height;
-
+        GLfloat _last_frame;
         ScreenQuad* _quad;
-        Shader* _shader;
+
+        Shader* _shader_render;
+        Shader* _shader_accumulate;
+
 };
 
 #endif

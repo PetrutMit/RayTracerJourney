@@ -15,6 +15,7 @@ class vec3 {
         __device__ __host__ vec3() : e{0, 0, 0} {}
         __device__ __host__ vec3(float e0) : e{e0, e0, e0} {}
         __device__ __host__ vec3(float e0, float e1, float e2) : e{e0, e1, e2} {}
+        __device__ __host__ vec3(const vec3 &v) : e{v.e[0], v.e[1], v.e[2]} {}
 
         // Getters
         __device__ float x() const { return e[0]; }
