@@ -59,7 +59,7 @@ After the execution of the kernel, the textured quad is drawn and gives this res
 
 4. **First person camera**
 In order to make the scene interactive, a first person camera is added. First, 
-there is a precomputed camera path. A scene with a complexity of 150 spheres is rendered, at 2 s.p.p. and 800x600 in real time. The result can be seen here ![result](results/Interactive_Demo.mp4).
+there is a precomputed camera path. A scene with a complexity of 150 spheres is rendered, at 2 s.p.p. and 800x600 in real time. The result can be seen here ![result](results/Interactive_Demo_Compressed.mp4).
 
 5. **Denoising**
 After the previous example, a problem arised. There is substantial amount of noise when less than 5
