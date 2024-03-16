@@ -19,6 +19,9 @@ file(COPY ${CMAKE_SOURCE_DIR}/src/Shaders DESTINATION .)
 # Define the executable
 add_executable(RealTimeRTX ${SOURCES} ${HEADERS})
 
+# Set RealTimeRTX as default startup project
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT RealTimeRTX)
+
 # Set the CUDA architecture
 set_target_properties(RealTimeRTX PROPERTIES CUDA_ARCHITECTURES 70)
 
@@ -72,7 +75,6 @@ if(MSVC_IDE)
 				string(REPLACE "/" "\\" groupname ${curdir})
 				string(REPLACE "src" "Sources" groupname ${groupname})
 				source_group(${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-				cmake_print_variables(groupname)
 			endif()
 		endforeach()
 	endmacro()

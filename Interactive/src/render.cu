@@ -8,8 +8,7 @@
 #include <glm/packing.hpp>
 
 #define NODE_COUNT 6
-#define FILTER_SIZE 1
-#define EXIT true
+#define FILTER_SIZE 8
 
 __device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState, GBufferTexel *gBuffer) {
     ray curRay = r;
@@ -70,9 +69,9 @@ __global__ void raytrace(int frame, vec3 *fbColor, int maxX, int maxY, int ns, c
     if ((i >= maxX) || (j >= maxY)) return;
 
     // Adjust our camera view
-    //if (i == 0 && j == 0) {
-    //    (*cam)->adjust_parameters(deltaTime);
-    //}
+    if (i == 0 && j == 0) {
+        (*cam)->adjust_parameters(deltaTime);
+    }
 
     int pixelIndex = j * maxX + i;
     curandState localRandState = randState[pixelIndex];
@@ -112,11 +111,6 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int stepWidth, vec3 *rayTra
    vec3 sum_albedo(0.0f);
    float sum_weight = 0.0f;
    
-   if (EXIT) {
-       fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(center_albedo.z(), center_albedo.y(), center_albedo.x(), 1.0f));
-       return;
-   }
-
    for (int dy = -2; dy <= 2; dy++) {
        for (int dx = -2; dx <= 2; dx++) {
            const int u = glm::clamp(i + dx * stepWidth, 0, 800);
