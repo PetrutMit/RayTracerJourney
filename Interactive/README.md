@@ -72,7 +72,4 @@ application, a sort of `reprojection` of previous rays is needed. Even with this
 My next idea was `Edge-Avoiding À-Trous` wavelet transform. I found this great paper [here](https://jo.dreggn.org/home/2010_atrous.pdf)
 and adapted to our needs. The noise is reduced significantly. There is room for improvement but I am happy with the outcome.
 The performance of the ATrous algorithm is good, at 8 ms for a 800x600 image. 
-<p allign="middle">
-    <img src="results/ATrous.png" width="450" height="300" />
-    <img src="results/NotDenoised.png" width="450" height="300" />
-</p>
+![alt-text-1](results/ATrous.png "À-Trous 1spp") ![alt-text-2](results/NotDenoised.png "Original 1spp")
