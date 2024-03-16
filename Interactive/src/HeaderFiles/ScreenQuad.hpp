@@ -86,10 +86,11 @@ class ScreenQuad {
             glDeleteBuffers(1, &_PBO);
         }
 
-        void render_cuda_texture(GLfloat deltaTime) {
+        void render_cuda_texture(GLfloat deltaTime, GLint frame) {
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            _render->render(deltaTime);
+            _render->render(deltaTime, frame);
+            _render->denoise();
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _PBO);
             glBindTexture(GL_TEXTURE_2D, _texture);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_BYTE, NULL);

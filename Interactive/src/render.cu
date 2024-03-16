@@ -7,17 +7,18 @@
 
 #include <glm/packing.hpp>
 
-
 #define NODE_COUNT 6
+#define FILTER_SIZE 1
+#define EXIT true
 
-__device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState) {
+__device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState, GBufferTexel *gBuffer) {
     ray curRay = r;
 
     color curAttenuation(1.0f, 1.0f, 1.0f);
     color curEmitted(0.0f, 0.0f, 0.0f);
     hit_record rec;
 
-    for (int i = 0; i < 50; i ++) {
+    for (int i = 0; i < 20; i ++) {
         if ((*world)->hit(curRay, interval(0.001, INF), rec)) {
             ray scattered;
             color attenuation;
@@ -26,6 +27,12 @@ __device__ color rayColor(const ray& r, const color& background, hittable_list *
                 curEmitted = curEmitted + curAttenuation * emitted;
                 curAttenuation = curAttenuation * attenuation;
                 curRay = scattered;
+
+                // Populate gBuffer on depth 0
+                if (i == 0) {
+                    gBuffer->normal = rec.normal;
+                    gBuffer->position = rec.p;
+                }
             } else {
                 return curAttenuation * emitted + curEmitted;
             }
@@ -55,32 +62,100 @@ __global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, cur
     curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
-__global__ void raytrace(uint32_t *fb, int maxX, int maxY, int ns, camera **cam, hittable_list **world, curandState *randState, float deltaTime) {
+__global__ void raytrace(int frame, vec3 *fbColor, int maxX, int maxY, int ns, camera **cam,
+                         hittable_list **world, curandState *randState, float deltaTime, GBufferTexel *gBuffer) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
     if ((i >= maxX) || (j >= maxY)) return;
 
     // Adjust our camera view
-    if (i == 0 && j == 0) {
-        (*cam)->adjust_parameters(deltaTime);
-    }
+    //if (i == 0 && j == 0) {
+    //    (*cam)->adjust_parameters(deltaTime);
+    //}
 
     int pixelIndex = j * maxX + i;
     curandState localRandState = randState[pixelIndex];
     color pixelColor(0.0f, 0.0f, 0.0f);
     color background(0.2f, 0.2f, 0.2f);
-    for (int s = 0; s < ns; s ++) {
-        float u = float(i + curand_uniform(&localRandState)) / float(maxX);
-        float v = float(j + curand_uniform(&localRandState)) / float(maxY);
 
-        ray r = (*cam)->get_ray(u, v, &localRandState);
-        pixelColor += rayColor(r, background, world, &localRandState);
-    }
+    // Just one sample per pixel
+    float u = float(i + curand_uniform(&localRandState)) / float(maxX);
+    float v = float(j + curand_uniform(&localRandState)) / float(maxY);
+
+    ray r = (*cam)->get_ray(u, v, &localRandState);
+    pixelColor += rayColor(r, background, world, &localRandState, &gBuffer[pixelIndex]);
 
     getColor(pixelColor, ns);
 
-    fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.z(), pixelColor.y(), pixelColor.x(), 1.0f));
+    fbColor[pixelIndex] = pixelColor;
+}
+
+__global__ void atrousDenoise(GBufferTexel* gBuffer, int stepWidth, vec3 *rayTracedInput, vec3 *denoisedOutput, uint32_t *fb) {
+   int i = threadIdx.x + blockIdx.x * blockDim.x;
+   int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+   if ((i >= 800) || (j >= 600)) return;
+
+   const float c_phi = 1.45f;
+   const float n_phi = 1.30f;
+   const float p_phi = 1.25f;
+
+   static constexpr float kernel[] = { 3.f / 8.f, 1.f / 4.f, 1.f / 16.f };
+    
+   int pixelIndex = j * 800 + i;
+   GBufferTexel center = gBuffer[pixelIndex];
+   vec3 center_normal = center.normal;
+   vec3 center_position = center.position;
+   vec3 center_albedo = rayTracedInput[pixelIndex];
+
+   vec3 sum_albedo(0.0f);
+   float sum_weight = 0.0f;
+   
+   if (EXIT) {
+       fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(center_albedo.z(), center_albedo.y(), center_albedo.x(), 1.0f));
+       return;
+   }
+
+   for (int dy = -2; dy <= 2; dy++) {
+       for (int dx = -2; dx <= 2; dx++) {
+           const int u = glm::clamp(i + dx * stepWidth, 0, 800);
+           const int v = glm::clamp(j + dy * stepWidth, 0, 600);
+
+           const int index = v * 800 + u;
+		   const GBufferTexel& texel = gBuffer[index];
+
+           const vec3 normal = texel.normal;
+           const vec3 position = texel.position;
+           const vec3 albedo = rayTracedInput[index];
+
+		   vec3 diff = center_position - position;
+           float dist = diff.length_squared();
+           const float p_weight = fminf(std::exp(-dist / p_phi), 1.0f);
+
+           diff = center_normal - normal;
+           dist = diff.length_squared();
+           const float n_weight = fminf(std::exp(-dist / n_phi), 1.0f);
+
+           diff = center_albedo - albedo;
+           dist = diff.length_squared();
+           const float c_weight = fminf(std::exp(-dist / c_phi), 1.0f);
+
+           const float weight = p_weight * n_weight * c_weight;
+
+           const int kernel_index = fminf(std::abs(dx), std::abs(dy));
+		   sum_albedo += albedo * kernel[kernel_index] * weight;
+
+           sum_weight += kernel[kernel_index] * weight;
+       }
+    }
+
+   vec3 denoisedPixel = sum_albedo / sum_weight;
+   denoisedOutput[pixelIndex] = denoisedPixel;
+    // On the last iteration, write the pixel to OpenGL bound buffer
+    if (stepWidth == FILTER_SIZE) {
+        fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(denoisedPixel.z(), denoisedPixel.y(), denoisedPixel.x(), 1.0f));
+    }
 }
 
 __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera **d_cam, curandState *randState) {
@@ -90,7 +165,6 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
         *(d_list) = new sphere(vec3(0.0f, -2000.0f, 0.0f), 2000.0f, ground);
 
         diffuse_light *light = new diffuse_light(color(3.0f, 3.0f, 3.0f));
-        //material *light = new lambertian(color(0.7f, 0.7f, 0.7f));
         sphere *moon = new sphere(vec3(-550.0f, 350.0f, 550.0f), 50.0f, light);
         *(d_list + 1) = moon; 
 
@@ -217,6 +291,19 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     cudaStatus = cudaMalloc((void**)&d_cam, sizeof(camera*));
     checkReturn(cudaStatus);
 
+    // create gBuffer
+    GBufferTexel *d_gbuffer;
+    cudaStatus = cudaMalloc((void**)&d_gbuffer, num_pixels * sizeof(GBufferTexel));
+    checkReturn(cudaStatus);
+
+    // create output color for raytracing
+    cudaStatus = cudaMalloc((void**)&_d_rayTracedImage, num_pixels * sizeof(vec3));
+    checkReturn(cudaStatus);
+
+    // create output color for denoising
+    cudaStatus = cudaMalloc((void**)&_d_denoisedImage, num_pixels * sizeof(vec3));
+    checkReturn(cudaStatus);
+
     // Even though we have an iterative approach, we still need a bigger stack
     size_t size;
     cudaDeviceGetLimit(&size, cudaLimitStackSize);
@@ -238,6 +325,7 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     _d_cam = d_cam;
     _d_world = d_world;
     _d_randStatePixels = d_randStatePixels;
+    _d_gBuffer = d_gbuffer;
 
     _cuda_pbo_resource = cuda_pbo_resource;
     cudaStatus = cudaGraphicsMapResources(1, &_cuda_pbo_resource);
@@ -247,14 +335,32 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     checkReturn(cudaStatus);
 }
 
-__host__ void Render::render(float deltaTime) {
+__host__ void Render::render(float deltaTime, int frame) {
     dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
     dim3 blockSize(TX, TY);
-    int ns = 2;
+    int ns = 1;
 
-    raytrace<<<blockCount, blockSize>>>(_d_output, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels, deltaTime);
+    raytrace<<<blockCount, blockSize>>>(frame, _d_rayTracedImage, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels, deltaTime, _d_gBuffer);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
+}
+
+__host__ void Render::denoise() {
+    const dim3 blockSize2d(8, 8);
+    const dim3 blocksPerGrid2d(
+        (800 + blockSize2d.x - 1) / blockSize2d.x,
+        (600 + blockSize2d.y - 1) / blockSize2d.y);
+    const int pixelcount = 800 * 600;
+
+    for (int stepWidth = 1; stepWidth <= FILTER_SIZE; stepWidth *= 2) {
+        atrousDenoise<<<blocksPerGrid2d, blockSize2d>>>(_d_gBuffer, stepWidth, _d_rayTracedImage, _d_denoisedImage, _d_output);
+        checkReturn(cudaGetLastError());
+        checkReturn(cudaDeviceSynchronize());
+        // Swap the buffers
+        vec3 *temp = _d_rayTracedImage;
+        _d_rayTracedImage = _d_denoisedImage;
+        _d_denoisedImage = temp;
+    }
 }
 
 Render::~Render() {

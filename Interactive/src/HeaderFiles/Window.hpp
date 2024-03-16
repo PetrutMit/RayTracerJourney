@@ -39,12 +39,13 @@ class Window {
 
             _shader_render = new Shader("./Shaders/render_pass_vertex.glsl",
                     					"./Shaders/render_pass_frag.glsl");
+
+            _frame = 0;
         }
 
         ~Window() {
             glfwTerminate();
             delete(_quad);
-            delete(_shader_accumulate);
             delete(_shader_render);
         }
 
@@ -57,7 +58,7 @@ class Window {
             printf("FPS : %f\n", 1.0f / delta_time);
 
             // Render the CUDA texture
-            _quad->render_cuda_texture(delta_time);
+            _quad->render_cuda_texture(delta_time, _frame);
             
             _shader_render->use();
             glActiveTexture(GL_TEXTURE0);
@@ -68,6 +69,7 @@ class Window {
             // Draw Call
             glfwSwapBuffers(_window);
             glfwPollEvents();
+            _frame++;
         }
 
         void process_input() const {
@@ -92,7 +94,7 @@ class Window {
         ScreenQuad* _quad;
 
         Shader* _shader_render;
-        Shader* _shader_accumulate;
+        GLuint _frame;
 
 };
 
