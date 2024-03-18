@@ -7,7 +7,7 @@
 
 #include <glm/packing.hpp>
 
-#define NODE_COUNT 6
+#define NODE_COUNT 7
 #define FILTER_SIZE 8
 
 __device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState, GBufferTexel *gBuffer) {
@@ -163,7 +163,7 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
         *(d_list + 1) = moon; 
 
         *(d_list + 2) = new sphere(vec3(-80.0f, 20.0f, -300.0f), 40.0f, new metal(color(0.1f, 0.9f, 0.1f), 0.1f));
-
+ 
         hittable **spheres = new hittable*[64];
         lambertian *red = new lambertian(color(0.9f, 0.2f, 0.1f));
         for (int i = 0; i < 64; i ++) {
@@ -205,30 +205,17 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
 
         *(d_list + 4) = new bvh_node(boxes, 4, randState);
 
-        // Create random spheres on the ground
-        hittable **ground_spheres = new hittable*[64];
-        int cnt = 0;
-        float chooseMat;
-        float randomRadius;
+        hittable** spheres2 = new hittable *[64];
+        lambertian* blue = new lambertian(color(0.1f, 0.1f, 0.9f));
+        for (int i = 0; i < 64; i++) {
+            spheres2[i] = new sphere(vec3(randomVectorBetween(randState, -50.0f, 0.0f) + vec3(-150.0f, 30.0f, -300.0f)), 7.0f, blue);
+        }
+        *(d_list + 5) = new bvh_node(spheres2, 64, randState);
 
-        for (float i = -400.0f; i < 400.0f; i += 100.0f) {
-			for (int j = -400.0f; j < 400.0f; j += 100.0f) {
-				chooseMat = curand_uniform(randState);
-                randomRadius = randomFloat(randState, 3.0f, 10.0f);
+        noise_texture* noise = new noise_texture(randState, 0.1f);
+        *(d_list + 6) = new sphere(vec3(250.0f, 0.0f, -300.0f), 40.0f, new lambertian(noise));
 
-				vec3 center(i + 100.0f * curand_uniform(randState), 0.0f, j + 100.0f * curand_uniform(randState));
-			    if (chooseMat < 0.8f) {
-                    ground_spheres[cnt++] = new sphere(center, randomRadius, new lambertian(randomVector(randState)));
-			    } else if (chooseMat < 0.95f) {
-				    ground_spheres[cnt++] = new sphere(center, randomRadius, new metal(randomVector(randState), randomFloat(randState, 0.0f, 0.5f)));
-			    } else {
-				    ground_spheres[cnt++] = new sphere(center, randomRadius, new dielectric(1.5f));
-			    }
-			}
-		}
-
-        *(d_list + 5) = new bvh_node(ground_spheres, 64, randState);
-
+        
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
         vec3 lookFrom(0.0f, 0.0f, -600.0f);

@@ -49,7 +49,13 @@ class camera {
         }
 
         __device__ void adjust_parameters(float deltaTime) {
-            _angle += SPEED * deltaTime;
+           if (_angle >= (-PI / 2 + PI / 5)) {
+				direction = false;
+			} else if (_angle <= (-PI / 2 - PI / 5)) {
+				direction = true;
+			}
+
+            _angle += direction ? SPEED * deltaTime : -SPEED * deltaTime;
 			_lookfrom = point3(_lookat.x() + _movement_radius * cosf(_angle), _lookfrom.y(), _lookat.z() + _movement_radius * sinf(_angle));
             _w = unit_vector(_lookfrom - _lookat);
 
@@ -70,7 +76,8 @@ class camera {
         // Movement
         float _movement_radius;
         float _angle;
-        const float SPEED = 0.1f;
+        const float SPEED = 0.05f;
+        bool direction = true;
 
 
     __device__ static float degrees_to_radians(float degrees) {
