@@ -33,6 +33,11 @@ class Window {
             }
 
             glViewport(0, 0, _width, _height);
+            GLFWframebuffersizefun framebuffer_size_callback = [](GLFWwindow* window, int width, int height) {
+				static_cast<Window*>(glfwGetWindowUserPointer(window))->framebuffer_size_callback(window, width, height);
+			};
+            glfwSetWindowUserPointer(_window, this);
+            glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
 
             _quad = new ScreenQuad(_width, _height);
 
@@ -83,6 +88,12 @@ class Window {
             }
         }
 
+        void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+            _width = width;
+            _height = height;
+			glViewport(0, 0, width, height);
+		}
+    
     private:
         // Window
         GLFWwindow* _window;

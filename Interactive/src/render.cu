@@ -117,8 +117,8 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int ste
 
     for (dy = -2; dy <= 2; dy++) {
         for (dx = -2; dx <= 2; dx++) {
-            u = glm::clamp(i + dx * stepWidth, 0, 800);
-            v = glm::clamp(j + dy * stepWidth, 0, 600);
+            u = glm::clamp(i + dx * stepWidth, 0, maxX);
+            v = glm::clamp(j + dy * stepWidth, 0, maxY);
 
             index = v * maxX + u;
 
@@ -155,7 +155,7 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int ste
     }
 }
 
-__global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera **d_cam, curandState *randState) {
+__global__ void allocateWorld(int maxX, int maxY, hittable **d_list, hittable_list **d_world, camera **d_cam, curandState *randState) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
 
         lambertian *ground = new lambertian(color(0.83f, 0.83f, 0.13f));
@@ -223,7 +223,7 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
         vec3 lookAt(0.0f, 0.0f, 0.0f);
         float distToFocus = 10.0f;
         float aperture = 0.0f;
-        float aspect_ratio = 3.0f / 2.0f;
+        float aspect_ratio = static_cast<float>(maxX) / static_cast<float>(maxY);
         float vfov = 40.0f;
 
         *(d_cam) = new camera(lookFrom, lookAt, vec3(0.0f, 1.0f, 0.0f), vfov, aspect_ratio, aperture, distToFocus);
@@ -297,7 +297,7 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 
-    allocateWorld<<<1, 1>>>(d_list, d_world, d_cam, d_randStateWorld);
+    allocateWorld<<<1, 1>>>(_nx, _ny, d_list, d_world, d_cam, d_randStateWorld);
     checkReturn(cudaGetLastError());
 
     // Free random state for world construction
