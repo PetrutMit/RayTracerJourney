@@ -36,10 +36,8 @@ class Window {
 
             _quad = new ScreenQuad(_width, _height);
 
-
             _shader_render = new Shader("./Shaders/render_pass_vertex.glsl",
                     					"./Shaders/render_pass_frag.glsl");
-
             _frame = 0;
         }
 
@@ -58,7 +56,7 @@ class Window {
             printf("FPS : %f\n", 1.0f / delta_time);
 
             // Render the CUDA texture
-            _quad->render_cuda_texture(delta_time, _frame);
+            _quad->render_cuda_texture(delta_time);
             
             _shader_render->use();
             glActiveTexture(GL_TEXTURE0);
@@ -95,7 +93,6 @@ class Window {
 
         Shader* _shader_render;
         GLuint _frame;
-
 };
 
 #endif

@@ -61,7 +61,7 @@ __global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, cur
     curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
-__global__ void raytrace(int frame, vec3 *fbColor, int maxX, int maxY, int ns, camera **cam,
+__global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam,
                          hittable_list **world, curandState *randState, float deltaTime, GBufferTexel *gBuffer) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -85,67 +85,70 @@ __global__ void raytrace(int frame, vec3 *fbColor, int maxX, int maxY, int ns, c
     ray r = (*cam)->get_ray(u, v, &localRandState);
     pixelColor += rayColor(r, background, world, &localRandState, &gBuffer[pixelIndex]);
 
-    getColor(pixelColor, ns);
+    getColor(pixelColor, 1);
 
     fbColor[pixelIndex] = pixelColor;
 }
+// TODO: Explore the possibility of using shared memory to store the gBuffer
+__global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int stepWidth, vec3* rayTracedInput, vec3* denoisedOutput, uint32_t* fb) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
 
-__global__ void atrousDenoise(GBufferTexel* gBuffer, int stepWidth, vec3 *rayTracedInput, vec3 *denoisedOutput, uint32_t *fb) {
-   int i = threadIdx.x + blockIdx.x * blockDim.x;
-   int j = threadIdx.y + blockIdx.y * blockDim.y;
+    if ((i >= maxX) || (j >= maxY)) return;
 
-   if ((i >= 800) || (j >= 600)) return;
+    const float c_phi = 1.45f;
+    const float n_phi = 1.30f;
+    const float p_phi = 1.25f;
 
-   const float c_phi = 1.45f;
-   const float n_phi = 1.30f;
-   const float p_phi = 1.25f;
+    static constexpr float kernel[] = { 3.f / 8.f, 1.f / 4.f, 1.f / 16.f };
 
-   static constexpr float kernel[] = { 3.f / 8.f, 1.f / 4.f, 1.f / 16.f };
-    
-   int pixelIndex = j * 800 + i;
-   GBufferTexel center = gBuffer[pixelIndex];
-   vec3 center_normal = center.normal;
-   vec3 center_position = center.position;
-   vec3 center_albedo = rayTracedInput[pixelIndex];
+    int pixelIndex = j * maxX + i;
 
-   vec3 sum_albedo(0.0f);
-   float sum_weight = 0.0f;
-   
-   for (int dy = -2; dy <= 2; dy++) {
-       for (int dx = -2; dx <= 2; dx++) {
-           const int u = glm::clamp(i + dx * stepWidth, 0, 800);
-           const int v = glm::clamp(j + dy * stepWidth, 0, 600);
+    GBufferTexel center = gBuffer[pixelIndex];
+    vec3 center_normal = center.normal;
+    vec3 center_position = center.position;
+    vec3 center_albedo = rayTracedInput[pixelIndex];
 
-           const int index = v * 800 + u;
-		   const GBufferTexel& texel = gBuffer[index];
+    vec3 sum_albedo(0.0f);
+    float sum_weight = 0.0f;
+    int dx, dy, u, v, index, kernel_index, dist;
+    vec3 normal, position, albedo, diff;
+    float p_weight, n_weight, c_weight, weight;
 
-           const vec3 normal = texel.normal;
-           const vec3 position = texel.position;
-           const vec3 albedo = rayTracedInput[index];
+    for (dy = -2; dy <= 2; dy++) {
+        for (dx = -2; dx <= 2; dx++) {
+            u = glm::clamp(i + dx * stepWidth, 0, 800);
+            v = glm::clamp(j + dy * stepWidth, 0, 600);
 
-		   vec3 diff = center_position - position;
-           float dist = diff.length_squared();
-           const float p_weight = fminf(std::exp(-dist / p_phi), 1.0f);
+            index = v * maxX + u;
 
-           diff = center_normal - normal;
-           dist = diff.length_squared();
-           const float n_weight = fminf(std::exp(-dist / n_phi), 1.0f);
+            normal = gBuffer[index].normal;
+            position = gBuffer[index].position;
+            albedo = rayTracedInput[index];
 
-           diff = center_albedo - albedo;
-           dist = diff.length_squared();
-           const float c_weight = fminf(std::exp(-dist / c_phi), 1.0f);
+            diff = center_position - position;
+            dist = diff.length_squared();
+            p_weight = fminf(std::exp(-dist / p_phi), 1.0f);
 
-           const float weight = p_weight * n_weight * c_weight;
+            diff = center_normal - normal;
+            dist = diff.length_squared();
+            n_weight = fminf(std::exp(-dist / n_phi), 1.0f);
 
-           const int kernel_index = fminf(std::abs(dx), std::abs(dy));
-		   sum_albedo += albedo * kernel[kernel_index] * weight;
+            diff = center_albedo - albedo;
+            dist = diff.length_squared();
+            c_weight = fminf(std::exp(-dist / c_phi), 1.0f);
 
-           sum_weight += kernel[kernel_index] * weight;
-       }
+            weight = p_weight * n_weight * c_weight;
+
+            kernel_index = fminf(std::abs(dx), std::abs(dy));
+            sum_albedo += albedo * kernel[kernel_index] * weight;
+
+            sum_weight += kernel[kernel_index] * weight;
+        }
     }
 
-   vec3 denoisedPixel = sum_albedo / sum_weight;
-   denoisedOutput[pixelIndex] = denoisedPixel;
+    vec3 denoisedPixel = sum_albedo / sum_weight;
+    denoisedOutput[pixelIndex] = denoisedPixel;
     // On the last iteration, write the pixel to OpenGL bound buffer
     if (stepWidth == FILTER_SIZE) {
         fb[pixelIndex] = glm::packUnorm4x8(glm::vec4(denoisedPixel.z(), denoisedPixel.y(), denoisedPixel.x(), 1.0f));
@@ -159,7 +162,7 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
         *(d_list) = new sphere(vec3(0.0f, -2000.0f, 0.0f), 2000.0f, ground);
 
         diffuse_light *light = new diffuse_light(color(3.0f, 3.0f, 3.0f));
-        sphere *moon = new sphere(vec3(-550.0f, 350.0f, 550.0f), 50.0f, light);
+        sphere* moon = new sphere(vec3(-550.0f, 350.0f, 550.0f), 50.0f, light);
         *(d_list + 1) = moon; 
 
         *(d_list + 2) = new sphere(vec3(-80.0f, 20.0f, -300.0f), 40.0f, new metal(color(0.1f, 0.9f, 0.1f), 0.1f));
@@ -190,7 +193,6 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
             y1 = randomFloat(randState, 1.0f, 100.0f);
             
             choice = randomInt(randState, 0, 2);
-            printf("choice: %d\n", choice);
             switch (choice)
             {
             case 0:
@@ -214,7 +216,6 @@ __global__ void allocateWorld(hittable **d_list, hittable_list **d_world, camera
 
         noise_texture* noise = new noise_texture(randState, 0.1f);
         *(d_list + 6) = new sphere(vec3(250.0f, 0.0f, -300.0f), 40.0f, new lambertian(noise));
-
         
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
@@ -238,7 +239,6 @@ __global__ void freeWorld(hittable **d_list, hittable_list **d_world, camera **d
         delete *(d_cam);
     }
 }
-
 
 Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     _nx = nx;
@@ -316,25 +316,21 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     checkReturn(cudaStatus);
 }
 
-__host__ void Render::render(float deltaTime, int frame) {
-    dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
-    dim3 blockSize(TX, TY);
-    int ns = 1;
+__host__ void Render::render(float deltaTime) {
+    const dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
+    const dim3 blockSize(TX, TY);
 
-    raytrace<<<blockCount, blockSize>>>(frame, _d_rayTracedImage, _nx, _ny, ns, _d_cam, _d_world, _d_randStatePixels, deltaTime, _d_gBuffer);
+    raytrace<<<blockCount, blockSize>>>(_d_rayTracedImage, _nx, _ny, _d_cam, _d_world, _d_randStatePixels, deltaTime, _d_gBuffer);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 }
 
 __host__ void Render::denoise() {
-    const dim3 blockSize2d(8, 8);
-    const dim3 blocksPerGrid2d(
-        (800 + blockSize2d.x - 1) / blockSize2d.x,
-        (600 + blockSize2d.y - 1) / blockSize2d.y);
-    const int pixelcount = 800 * 600;
+    const dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
+    const dim3 blockSize(TX, TY);
 
     for (int stepWidth = 1; stepWidth <= FILTER_SIZE; stepWidth *= 2) {
-        atrousDenoise<<<blocksPerGrid2d, blockSize2d>>>(_d_gBuffer, stepWidth, _d_rayTracedImage, _d_denoisedImage, _d_output);
+        atrousDenoise<<<blockCount, blockSize>>>(_d_gBuffer, _nx, _ny, stepWidth, _d_rayTracedImage, _d_denoisedImage, _d_output);
         checkReturn(cudaGetLastError());
         checkReturn(cudaDeviceSynchronize());
         // Swap the buffers

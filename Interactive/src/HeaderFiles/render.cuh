@@ -20,7 +20,7 @@ class Render
         Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource);
         ~Render();
 
-        __host__ void render(float deltaTime, int frame);
+        __host__ void render(float deltaTime);
         __host__ void denoise();
 
     private:

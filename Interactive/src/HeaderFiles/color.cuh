@@ -29,7 +29,6 @@ __device__ void getColor(color& pixelColor, int samplesPerPixel) {
         pixelColor[i] = clamp(pixelColor[i], 0.0f, 0.999f);
     }
 
-    //pixelColor = 256.0f * pixelColor;
 }
 
 #endif

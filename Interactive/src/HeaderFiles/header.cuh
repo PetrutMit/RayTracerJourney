@@ -22,10 +22,8 @@
 
 #include <curand_kernel.h>
 
-#define TX 8
-#define TY 8
-
-//#define FLT_MAX 3.402823466e+38F
+#define TX 16
+#define TY 16
 
 // Adding a method to help us handle errors
 inline void checkReturn(cudaError_t err) {
@@ -35,6 +33,5 @@ inline void checkReturn(cudaError_t err) {
         exit(EXIT_FAILURE);
     }
 }
-
 
 #endif
