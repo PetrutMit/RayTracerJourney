@@ -8,7 +8,7 @@
 #include <glm/packing.hpp>
 
 #define NODE_COUNT 7
-#define FILTER_SIZE 8
+#define FILTER_SIZE 4
 
 __device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState, GBufferTexel *gBuffer) {
     ray curRay = r;
@@ -61,8 +61,8 @@ __global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, cur
     curand_init(1984 + pixelIndex, 0, 0, &randStatePixels[pixelIndex]);
 }
 
-__global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam,
-                         hittable_list **world, curandState *randState, float deltaTime, GBufferTexel *gBuffer) {
+__global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam, hittable_list **world,
+                         curandState *randState, float deltaTime, GBufferTexel *gBuffer, uint32_t *fbOut, bool denoise) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -87,7 +87,10 @@ __global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam,
 
     getColor(pixelColor, 1);
 
-    fbColor[pixelIndex] = pixelColor;
+    if (denoise)
+        fbColor[pixelIndex] = pixelColor;
+    else
+        fbOut[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.z(), pixelColor.y(), pixelColor.x(), 1.0f));
 }
 // TODO: Explore the possibility of using shared memory to store the gBuffer
 __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int stepWidth, vec3* rayTracedInput, vec3* denoisedOutput, uint32_t* fb) {
@@ -96,9 +99,9 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int ste
 
     if ((i >= maxX) || (j >= maxY)) return;
 
-    const float c_phi = 1.45f;
-    const float n_phi = 1.30f;
-    const float p_phi = 1.25f;
+    const float c_phi = 2.45f;
+    const float n_phi = 2.30f;
+    const float p_phi = 2.25f;
 
     static constexpr float kernel[] = { 3.f / 8.f, 1.f / 4.f, 1.f / 16.f };
 
@@ -131,7 +134,7 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int ste
             p_weight = fminf(std::exp(-dist / p_phi), 1.0f);
 
             diff = center_normal - normal;
-            dist = diff.length_squared();
+            dist = fmaxf(diff.length_squared() / static_cast<float>(stepWidth * stepWidth), 0.0);
             n_weight = fminf(std::exp(-dist / n_phi), 1.0f);
 
             diff = center_albedo - albedo;
@@ -161,7 +164,7 @@ __global__ void allocateWorld(int maxX, int maxY, hittable **d_list, hittable_li
         lambertian *ground = new lambertian(color(0.83f, 0.83f, 0.13f));
         *(d_list) = new sphere(vec3(0.0f, -2000.0f, 0.0f), 2000.0f, ground);
 
-        diffuse_light *light = new diffuse_light(color(3.0f, 3.0f, 3.0f));
+        diffuse_light *light = new diffuse_light(color(1.0f, 1.0f, 1.0f));
         sphere* moon = new sphere(vec3(-550.0f, 350.0f, 550.0f), 50.0f, light);
         *(d_list + 1) = moon; 
 
@@ -316,11 +319,12 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     checkReturn(cudaStatus);
 }
 
-__host__ void Render::render(float deltaTime) {
+__host__ void Render::render(float deltaTime, bool denoise) {
     const dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
     const dim3 blockSize(TX, TY);
 
-    raytrace<<<blockCount, blockSize>>>(_d_rayTracedImage, _nx, _ny, _d_cam, _d_world, _d_randStatePixels, deltaTime, _d_gBuffer);
+    raytrace << <blockCount, blockSize >> > (_d_rayTracedImage, _nx, _ny, _d_cam, _d_world,
+        _d_randStatePixels, deltaTime, _d_gBuffer, _d_output, denoise);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 }

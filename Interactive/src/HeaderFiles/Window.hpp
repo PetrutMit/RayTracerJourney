@@ -9,8 +9,8 @@
 
 class Window {
 
-    public:
-        Window(int width, int height) : _width(width), _height(height), _last_frame(glfwGetTime()) {
+public:
+    Window(int width, int height) : _width(width), _height(height), _last_frame(glfwGetTime()), _enable_denoising(true) {
             if (!glfwInit()) {
                 throw "Failed to initialize GLFW";
             }
@@ -43,7 +43,8 @@ class Window {
 
             _shader_render = new Shader("./Shaders/render_pass_vertex.glsl",
                     					"./Shaders/render_pass_frag.glsl");
-            _frame = 0;
+
+            _title = new char[100];
         }
 
         ~Window() {
@@ -57,11 +58,13 @@ class Window {
             GLfloat current_frame = glfwGetTime();
             GLfloat delta_time = current_frame - _last_frame;
             _last_frame = current_frame;
-
-            printf("FPS : %f\n", 1.0f / delta_time);
+            
+            // Set the window title
+            sprintf(_title, "Path Tracer - %.2f FPS", 1.0f / delta_time);
+            glfwSetWindowTitle(_window, _title);
 
             // Render the CUDA texture
-            _quad->render_cuda_texture(delta_time);
+            _quad->render_cuda_texture(delta_time, _enable_denoising);
             
             _shader_render->use();
             glActiveTexture(GL_TEXTURE0);
@@ -72,12 +75,15 @@ class Window {
             // Draw Call
             glfwSwapBuffers(_window);
             glfwPollEvents();
-            _frame++;
         }
 
-        void process_input() const {
+        void process_input() {
             if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
                 glfwSetWindowShouldClose(_window, true);
+            }
+
+            if (glfwGetKey(_window, GLFW_KEY_P) == GLFW_PRESS) {
+                _enable_denoising = _enable_denoising ? false : true;
             }
         }
 
@@ -101,9 +107,10 @@ class Window {
         int _height;
         GLfloat _last_frame;
         ScreenQuad* _quad;
+        char* _title;
 
         Shader* _shader_render;
-        GLuint _frame;
+        GLboolean _enable_denoising;
 };
 
 #endif
