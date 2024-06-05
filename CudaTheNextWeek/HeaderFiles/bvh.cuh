@@ -79,6 +79,15 @@ __device__ bool bvh_node::hit(const ray& r, interval ray_t, hit_record& rec) con
         }
     }
     return hit;
+
+    // Recursive approach
+    // if (!_bbox.hit(r, ray_t))
+    //     return false;
+
+    // bool hit_left = _left->hit(r, ray_t, rec);
+    // bool hit_right = _right->hit(r, interval(ray_t.min, hit_left ? rec.t : ray_t.max), rec);
+
+    // return hit_left || hit_right;
 }
 
 __device__ bvh_node::bvh_node(hittable **l, int n, curandState *localState) {
@@ -137,7 +146,41 @@ __device__ bvh_node::bvh_node(hittable **l, int n, curandState *localState) {
 
      _left = nodes[0];
      _right = nodes[1];
-     _bbox = aabb(_left->bounding_box(), _right->bounding_box());     
+     _bbox = aabb(_left->bounding_box(), _right->bounding_box());
+
+    // Recursive approach
+    // int axis = randomInt(localState, 0, 2);
+    // bool (*comparator)(hittable*, hittable*);
+    // switch (axis) {
+    //     case 0:
+    //         comparator = box_x_compare;
+    //         break;
+    //     case 1:
+    //         comparator = box_y_compare;
+    //         break;
+    //     case 2:
+    //         comparator = box_z_compare;
+    //         break;
+    // }
+
+    // if (n == 1) {
+    //     _left = _right = l[0];
+    // } else if (n == 2) {
+    //     if (comparator(l[0], l[1])) {
+    //         _left = l[0];
+    //         _right = l[1];
+    //     } else {
+    //         _left = l[1];
+    //         _right = l[0];
+    //     }
+    // } else {
+    //     thrust::sort(l, l + n, comparator);
+    //     int mid = n / 2;
+    //     _left = new bvh_node(l, mid, localState);
+    //     _right = new bvh_node(l + mid, n - mid, localState);
+    // }
+
+    // _bbox = aabb(_left->bounding_box(), _right->bounding_box());
 }
 
 __device__ aabb bvh_node::bounding_box() const {

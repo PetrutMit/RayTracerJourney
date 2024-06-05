@@ -33,7 +33,7 @@ __device__ color rayColor(const ray& r, const color& background, hittable **worl
     color curEmitted(0.0f, 0.0f, 0.0f);
     hit_record rec;
 
-    for (int i = 0; i < 20; i ++) {
+    for (int i = 0; i < 50; i ++) {
         if ((*world)->hit(curRay, interval(0.001, INF), rec)) {
             ray scattered;
             color attenuation;
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     bool useBVH = atoi(argv[1]);
     int nx = 900;
     int ny = 600;
-    int ns = 5;
+    int ns = 10;
 
     int num_pixels = nx * ny;
 

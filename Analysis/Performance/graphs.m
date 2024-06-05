@@ -18,6 +18,11 @@ PTHREADS_2 = [38.768 19.471 18.140 16.768 16.511];
 HYBRID_10 = [51.135 25.567 19.135 18.135 18.147];
 
 
+SPP = [1 2 4 10]
+CUDA_NO_BVH = [0.816 1.639 3.378 8.623]
+CUDA_REC_BVH = [0.431 0.922 1.979 5.048]
+CUDA_ITER_BVH = [0.162 0.333 0.665 1.706]
+
 % 1. Execution time - CPU Parallel Solutions
 figure(1);
 plot(NUM_THREADS, OPENMP, 'b', NUM_THREADS, MPI, 'c', NUM_THREADS, PTHREADS, 'm', NUM_THREADS, HYBRID, 'y', LineWidth=2);
@@ -74,4 +79,16 @@ ylabel('Speedup');
 set(gca, 'XTickLabel', {'PTHREADS', 'CUDA'});
 text(1:length(SPEEDUP),SPEEDUP/2 - 1,num2str(SPEEDUP'),'vert','bottom','horiz','center');
 print -dpng 5.png
+
+% 6. Speedup - BVH CUDA Iterative, Recursive
+figure(6);
+SPEEDUP = CUDA_NO_BVH ./ [CUDA_ITER_BVH; CUDA_REC_BVH];
+b = bar(SPEEDUP', 'FaceColor', 'flat');
+title('Speedup BVH CUDA Iterative, Recursive');
+xlabel('Number of samples per pixel');
+ylabel('Speedup');
+set(gca, 'XTickLabel', {'1', '2', '4', '10'});
+legend('CUDA Iterative BVH', 'CUDA Recursive BVH');
+print -dpng 6.png;
+
 
