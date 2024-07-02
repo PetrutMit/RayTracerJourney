@@ -7,7 +7,7 @@
 
 #include <glm/packing.hpp>
 
-#define NODE_COUNT 7
+#define NODE_COUNT 8
 #define FILTER_SIZE 4
 
 __device__ color rayColor(const ray& r, const color& background, hittable_list **world, curandState *localRandState, GBufferTexel *gBuffer) {
@@ -62,7 +62,9 @@ __global__ void renderInit(int maxX, int maxY, curandState *randStatePixels, cur
 }
 
 __global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam, hittable_list **world,
-                         curandState *randState, float deltaTime, GBufferTexel *gBuffer, uint32_t *fbOut, bool denoise) {
+                         curandState *randState, int frameCount, float deltaTime,
+                          float camera_X, float camera_Y, float camera_Z,
+                         GBufferTexel *gBuffer, uint32_t *fbOut, bool denoise) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -70,7 +72,7 @@ __global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam, hittab
 
     // Adjust our camera view
     if (i == 0 && j == 0) {
-        (*cam)->adjust_parameters(deltaTime);
+        (*cam)->adjust_position(vec3(camera_X, camera_Y, camera_Z));
     }
 
     int pixelIndex = j * maxX + i;
@@ -83,16 +85,22 @@ __global__ void raytrace(vec3 *fbColor, int maxX, int maxY, camera **cam, hittab
     float v = float(j + curand_uniform(&localRandState)) / float(maxY);
 
     ray r = (*cam)->get_ray(u, v, &localRandState);
-    pixelColor += rayColor(r, background, world, &localRandState, &gBuffer[pixelIndex]);
+    pixelColor = rayColor(r, background, world, &localRandState, &gBuffer[pixelIndex]);
 
     getColor(pixelColor, 1);
 
-    if (denoise)
-        fbColor[pixelIndex] = pixelColor;
-    else
-        fbOut[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.z(), pixelColor.y(), pixelColor.x(), 1.0f));
+    // Frame accumulation in fbColor
+    fbColor[pixelIndex] = mix(fbColor[pixelIndex], pixelColor, 0.3);
+
+    if ( !denoise ) {
+        fbOut[pixelIndex] = glm::packUnorm4x8(glm::vec4(pixelColor.z(), pixelColor.y(), pixelColor.x(), 1));
+	}
+    
+   // Change rand state
+    curand_init(1984 + pixelIndex + frameCount, 0, 0, &randState[pixelIndex]);
+
 }
-// TODO: Explore the possibility of using shared memory to store the gBuffer
+
 __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int stepWidth, vec3* rayTracedInput, vec3* denoisedOutput, uint32_t* fb) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -161,7 +169,7 @@ __global__ void atrousDenoise(GBufferTexel* gBuffer, int maxX, int maxY, int ste
 __global__ void allocateWorld(int maxX, int maxY, hittable **d_list, hittable_list **d_world, camera **d_cam, curandState *randState) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
 
-        lambertian *ground = new lambertian(color(0.83f, 0.83f, 0.13f));
+        lambertian *ground = new lambertian(color(0.1f, 0.3f, 0.3f));
         *(d_list) = new sphere(vec3(0.0f, -2000.0f, 0.0f), 2000.0f, ground);
 
         diffuse_light *light = new diffuse_light(color(1.0f, 1.0f, 1.0f));
@@ -210,6 +218,8 @@ __global__ void allocateWorld(int maxX, int maxY, hittable **d_list, hittable_li
 
         *(d_list + 4) = new bvh_node(boxes, 4, randState);
 
+        // Until here, we have 1 + 1 + 1 + 64 + 24 = 91 objects
+
         hittable** spheres2 = new hittable *[64];
         lambertian* blue = new lambertian(color(0.1f, 0.1f, 0.9f));
         for (int i = 0; i < 64; i++) {
@@ -217,8 +227,35 @@ __global__ void allocateWorld(int maxX, int maxY, hittable **d_list, hittable_li
         }
         *(d_list + 5) = new bvh_node(spheres2, 64, randState);
 
-        noise_texture* noise = new noise_texture(randState, 0.1f);
-        *(d_list + 6) = new sphere(vec3(250.0f, 0.0f, -300.0f), 40.0f, new lambertian(noise));
+   
+        // Create a cone of spheres
+        hittable **groundSpheres = new hittable*[64];
+        vec3 center(250.0f, -10.0f, -300.0f);
+        float sphereRadius = 10.0f;
+        int cnt = 0;
+
+        // Layers of spheres
+        for (int i = 0; i < 5; i++) {
+            float circleRadius = 10.0f * (i + 1);
+            for (int j = 0; j < 4 * (i + 1); j++) {
+				float angle = 2.0f * PI * j / (4.0f * (i + 1));
+				float x = circleRadius * cos(angle);
+				float z = circleRadius * sin(angle);
+				float y = 20.0f * i;
+				vec3 position = vec3(x, y, z) + center;
+				groundSpheres[cnt ++] = new sphere(position, sphereRadius, new lambertian(randomVector(randState)));
+			}
+    	}
+        // 4 + 8 + 12 + 16 + 20 = 60 spheres
+        // add 4 more
+        groundSpheres[cnt++] = new sphere(vec3(250.0f, 100.0f, -300.0f), 10.0f, new lambertian(vec3(0.8f, 0.8f, 0.8f)));
+        groundSpheres[cnt++] = new sphere(vec3(250.0f, 120.0f, -300.0f), 10.0f, new lambertian(vec3(0.8f, 0.8f, 0.8f)));
+        groundSpheres[cnt++] = new sphere(vec3(250.0f, 140.0f, -300.0f), 10.0f, new lambertian(vec3(0.8f, 0.8f, 0.8f)));
+        groundSpheres[cnt++] = new sphere(vec3(250.0f, 160.0f, -300.0f), 10.0f, new lambertian(vec3(0.8f, 0.8f, 0.8f)));
+        *(d_list + 6) = new bvh_node(groundSpheres, 64, randState);
+
+        *(d_list + 7) = new sphere(vec3(-250.0f, 0.0f, -270.0f), 40.0f, new dielectric(1.5f));
+
         
         *(d_world) = new hittable_list(d_list, NODE_COUNT);
 
@@ -319,12 +356,12 @@ Render::Render(int nx, int ny, cudaGraphicsResource_t cuda_pbo_resource) {
     checkReturn(cudaStatus);
 }
 
-__host__ void Render::render(float deltaTime, bool denoise) {
+__host__ void Render::render(int frameCount, float deltaTime, float camera_X, float camera_Y, float camera_Z, bool denoise) {
     const dim3 blockCount(_nx + TX - 1 / TX, _ny + TY - 1 / TY);
     const dim3 blockSize(TX, TY);
 
     raytrace << <blockCount, blockSize >> > (_d_rayTracedImage, _nx, _ny, _d_cam, _d_world,
-        _d_randStatePixels, deltaTime, _d_gBuffer, _d_output, denoise);
+        _d_randStatePixels, frameCount, deltaTime, camera_X, camera_Y, camera_Z, _d_gBuffer, _d_output, denoise);
     checkReturn(cudaGetLastError());
     checkReturn(cudaDeviceSynchronize());
 }
