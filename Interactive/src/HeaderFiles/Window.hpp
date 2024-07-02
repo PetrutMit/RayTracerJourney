@@ -10,7 +10,7 @@
 class Window {
 
 public:
-    Window(int width, int height) : _width(width), _height(height), _last_frame(glfwGetTime()), _enable_denoising(true) {
+    Window(int width, int height) : _width(width), _height(height), _last_frame(glfwGetTime()), _enable_denoising(true), _frame_count(0) {
             if (!glfwInit()) {
                 throw "Failed to initialize GLFW";
             }
@@ -45,6 +45,10 @@ public:
                     					"./Shaders/render_pass_frag.glsl");
 
             _title = new char[100];
+
+            _camera_X = 0.0f;
+            _camera_Y = 0.0f;
+            _camera_Z = -600.0f;
         }
 
         ~Window() {
@@ -56,15 +60,15 @@ public:
         void update() {
             // Compute Delta Time
             GLfloat current_frame = glfwGetTime();
-            GLfloat delta_time = current_frame - _last_frame;
+            _delta_time = current_frame - _last_frame;
             _last_frame = current_frame;
             
             // Set the window title
-            sprintf(_title, "Path Tracer - %.2f FPS", 1.0f / delta_time);
+            sprintf(_title, "Path Tracer - %.2f FPS", 1.0f / _delta_time);
             glfwSetWindowTitle(_window, _title);
 
             // Render the CUDA texture
-            _quad->render_cuda_texture(delta_time, _enable_denoising);
+            _quad->render_cuda_texture(_frame_count, _delta_time, _camera_X, _camera_Y, _camera_Z, _enable_denoising);
             
             _shader_render->use();
             glActiveTexture(GL_TEXTURE0);
@@ -75,6 +79,7 @@ public:
             // Draw Call
             glfwSwapBuffers(_window);
             glfwPollEvents();
+            _frame_count++;
         }
 
         void process_input() {
@@ -85,8 +90,32 @@ public:
             if (glfwGetKey(_window, GLFW_KEY_P) == GLFW_PRESS) {
                 _enable_denoising = _enable_denoising ? false : true;
             }
-        }
 
+            // Camera movement
+            if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS) {
+				_camera_Z += _camera_speed * _delta_time;
+			}
+
+            if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS) {
+                _camera_Z -= _camera_speed * _delta_time;
+            }
+
+            if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS) {
+				_camera_X += _camera_speed * _delta_time;
+			}
+
+            if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS) {
+				_camera_X -= _camera_speed * _delta_time;
+			}
+
+            if (glfwGetKey(_window, GLFW_KEY_Q) == GLFW_PRESS) {
+                _camera_Y -= _camera_speed * _delta_time;
+            }
+
+            if (glfwGetKey(_window, GLFW_KEY_E) == GLFW_PRESS) {
+				_camera_Y += _camera_speed * _delta_time;
+			}
+        }
         void loop() {
            while (!glfwWindowShouldClose(_window)) {
                 process_input();
@@ -108,9 +137,16 @@ public:
         GLfloat _last_frame;
         ScreenQuad* _quad;
         char* _title;
+        GLfloat _delta_time;
 
         Shader* _shader_render;
         GLboolean _enable_denoising;
+        GLint _frame_count;
+        GLfloat _camera_X;
+        GLfloat _camera_Y;
+        GLfloat _camera_Z;
+
+        const GLfloat _camera_speed = 20.f;
 };
 
 #endif

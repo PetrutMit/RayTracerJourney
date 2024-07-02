@@ -61,6 +61,14 @@ class camera {
 
 			_lower_left_corner = _lookfrom - _horizontal / 2.0f - _vertical / 2.0f - _w * _focus_dist;
         }
+
+      __device__ void adjust_position(vec3 lookfrom) {
+			_lookfrom = lookfrom;
+			_w = unit_vector(_lookfrom - _lookat);
+
+			_lower_left_corner = _lookfrom - _horizontal / 2.0f - _vertical / 2.0f - _w * _focus_dist;
+		}
+
         #endif
 
     private:
